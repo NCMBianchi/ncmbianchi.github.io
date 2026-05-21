@@ -1,0 +1,40 @@
+# Gitignore — ncmbianchi.github.io
+
+# ── Agent / AI assistant notes (not for version control) ──────────────
+CRUSH.md
+QUESTIONS.md
+AGENTS.md
+
+# ── macOS system files ─────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ── Editor / IDE ───────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Local dev servers ──────────────────────────────────────────────────
+.cache/
+.parcel-cache/
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# ── Temporary / generated files that appear during local testing ───────
+*.log
+*.tmp
+*.bak
+dist/
+build/
+
+# ── Large personal assets (add individually to git if needed) ─────────
+# assets/photo.jpg
+# assets/cv.pdf
