@@ -4,6 +4,8 @@
 CRUSH.md
 QUESTIONS.md
 AGENTS.md
+.crush/
+.git/gitbutler/
 
 # ── macOS system files ─────────────────────────────────────────────────
 .DS_Store

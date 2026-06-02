@@ -2,14 +2,22 @@
 
 > Personal portfolio website for Niccolò Bianchi — bioinformatician, data analysis developer.
 
-<!-- Badges will live here once CI/CD and tooling are wired up -->
-<!-- e.g. GitHub Actions deploy status, Codecov coverage, language badges -->
+<!-- Badges -->
+[![Deploy](https://img.shields.io/github/actions/workflow/status/NCMBianchi/ncmbianchi.github.io/deploy.yml?style=flat-square&label=deploy)](https://github.com/NCMBianchi/ncmbianchi.github.io/actions)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Bun](https://img.shields.io/badge/Bun-black?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
+[![Rust](https://img.shields.io/badge/Rust-black?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![codecov](https://img.shields.io/codecov/c/github/NCMBianchi/ncmbianchi.github.io?style=flat-square)](https://codecov.io/gh/NCMBianchi/ncmbianchi.github.io)
 
 ---
 
 ## About
 
-This is the source for [ncmbianchi.github.io](https://ncmbianchi.github.io), a static portfolio site built with plain HTML, CSS, and JavaScript (no framework).
+Static portfolio site for [ncmbianchi.github.io](https://ncmbianchi.github.io), built with plain HTML, CSS, and vanilla JavaScript — no framework, no build step.
+
+The landing page features a terminal animation styled after the owner's own fish shell prompt (`⋊≡°>`) and the [Afterglow](https://github.com/YabataDesign/afterglow-theme) colour theme. The animated TUI runs a mock `myself -h` command cycling through six sections.
 
 ---
 
@@ -17,12 +25,18 @@ This is the source for [ncmbianchi.github.io](https://ncmbianchi.github.io), a s
 
 ```
 .
-├── index.html          # Single-page portfolio
+├── index.html              # Landing page with terminal animation
+├── about.html              # Academic studies
+├── publications.html       # Publications (ORCID)
+├── presentations.html      # Presentations (Zenodo)
+├── repos.html              # Repos / contributions
+├── skills.html             # Skills
+├── interests.html          # Interests
 ├── css/
-│   └── style.css       # All styles, token-driven via CSS custom properties
+│   └── style.css           # All styles — tokens in :root, Afterglow terminal palette
 ├── js/
-│   └── main.js         # Minimal progressive enhancement
-├── assets/             # Images, CV PDF, etc. (not tracked in git for large files)
+│   └── main.js             # Terminal animation, skip logic, nav behaviour
+├── assets/                 # Photo, CV PDF (not tracked — see .gitignore)
 ├── LICENSE
 └── README.md
 ```
@@ -31,41 +45,38 @@ This is the source for [ncmbianchi.github.io](https://ncmbianchi.github.io), a s
 
 ## Local development
 
-No build step required — open `index.html` directly in a browser, or serve locally:
+No install needed:
 
 ```bash
-# Python (any machine with Python 3)
-python3 -m http.server 8080
+# Preferred (Bun)
+bun --hot ./index.html
 
-# Node (if you have npx)
-npx serve .
+# Fallback
+python3 -m http.server 8080
 ```
 
 ---
 
-## Customisation
+## Design notes
 
-All design tokens (colours, fonts, spacing) are CSS custom properties in `css/style.css` under `:root`. Swap them to restyle the entire site.
-
-Content sections in `index.html`:
-
-| Section | What to edit |
+| Property | Value |
 |---|---|
-| **Hero** | Name, title, tagline, photo path, quick links |
-| **About** | Bio paragraphs, skills snapshot |
-| **Publications** | `<article class="pub-card">` blocks |
-| **Presentations** | `<article class="pres-card">` blocks |
-| **Projects** | `<article class="proj-card">` blocks |
-| **Contact** | Email address, profile links |
+| Primary font | JetBrains Mono (Google Fonts) |
+| Terminal palette | [Afterglow](https://github.com/YabataDesign/afterglow-theme) by YabataDesign |
+| Prompt character | `⋊≡°>` (from [keep_the_fish_alive](https://github.com/NCMBianchi/keep_the_fish_alive)) |
+| Accent | Pastel lavender `#9b8bf4` (light) / `#b5a7f7` (dark) |
+| Themes | Light default + auto dark via `prefers-color-scheme` |
+
+CLI/TUI aesthetic references: [Lipgloss](https://github.com/charmbracelet/lipgloss) · [Gum](https://github.com/charmbracelet/gum) · [Glow](https://github.com/charmbracelet/glow) · [Bubble Tea](https://github.com/charmbracelet/bubbletea)
 
 ---
 
 ## Deployment
 
-The site is deployed automatically via GitHub Actions to GitHub Pages on push to `main`.
+Deployed automatically via GitHub Actions to GitHub Pages on push to `main`.
 
 ---
 
 ## License
 
-[MIT](LICENSE) © 2024 Niccolò Bianchi
+[MIT](LICENSE) © 2026 Niccolò Bianchi

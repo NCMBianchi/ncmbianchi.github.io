@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temp — Niccolò Bianchi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ─── Navigation ────────────────────────────────────────────────── -->
+  <header id="site-header">
+    <nav class="nav-inner">
+      <a class="nav-brand" href="index.html">NCMBianchi</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#publications">Publications</a></li>
+        <li><a href="#presentations">Presentations</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ─── About ─────────────────────────────────────────────────────── -->
+    <section id="about" class="section section--about">
+      <div class="container">
+        <h2 class="section-title">About</h2>
+        <div class="about-grid">
+          <div class="about-bio">
+            <img class="about-photo" src="assets/photo.jpg" alt="Niccolò Bianchi" onerror="this.style.display='none'" />
+            <p>
+              I am a bioinformatician at <strong>SR-Tiget (San Raffaele Telethon Institute for Gene Therapy)</strong> in Milan,
+              focused on developing data analysis pipelines and tools for scientific research. My work sits at the
+              intersection of computational biology, software engineering, and data science.
+            </p>
+            <p>
+              My primary languages are <strong>Python</strong> and <strong>R</strong>. I work extensively with single-cell
+              omics data, bulk RNAseq, and custom bioinformatics pipelines. Alongside wet-lab-adjacent computational
+              work I enjoy building reusable packages and automation tools.
+            </p>
+          </div>
+          <div class="about-skills">
+            <h3>Skills snapshot</h3>
+            <ul class="skill-list">
+              <li><span class="skill-level advanced">Advanced</span> Python · R · Git · Jupyter</li>
+              <li><span class="skill-level intermediate">Intermediate</span> MySQL · PyTorch · XGBoost · HTML/CSS/JS</li>
+              <li><span class="skill-level basic">Basic</span> Rust · Flask · Nextflow · TensorFlow</li>
+            </ul>
+            <h3 class="mt">Interests outside bioinformatics</h3>
+            <p class="small-text">Photography · Creative writing · Graphic design · Coffee &amp; tea · Custom keyboards</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Publications ──────────────────────────────────────────────── -->
+    <section id="publications" class="section section--publications">
+      <div class="container">
+        <h2 class="section-title">Publications</h2>
+        <p class="section-sub">
+          Full list on <a href="https://orcid.org/0009-0000-4202-7154" target="_blank" rel="noopener">ORCID ↗</a>
+        </p>
+        <article class="pub-card">
+          <div class="pub-meta">
+            <span class="pub-year">2024</span>
+            <span class="pub-type">Preprint / Article</span>
+          </div>
+          <h3 class="pub-title">
+            <a href="#" target="_blank" rel="noopener">Publication title goes here</a>
+          </h3>
+          <p class="pub-authors">Bianchi N, <em>et al.</em></p>
+          <p class="pub-venue"><em>Journal / Conference name</em></p>
+          <div class="pub-links">
+            <a class="tag" href="#">DOI</a>
+            <a class="tag" href="#">PDF</a>
+          </div>
+        </article>
+        <p class="placeholder-note">← Replace the card above with your actual publications.</p>
+      </div>
+    </section>
+
+    <!-- ─── Presentations ─────────────────────────────────────────────── -->
+    <section id="presentations" class="section section--presentations">
+      <div class="container">
+        <h2 class="section-title">Presentations</h2>
+        <article class="pres-card">
+          <div class="pres-meta">
+            <span class="pres-year">2024</span>
+            <span class="pres-type">Talk / Poster</span>
+          </div>
+          <h3 class="pres-title">Presentation title goes here</h3>
+          <p class="pres-event"><em>Conference / Symposium name</em> — City, Country</p>
+          <div class="pres-links">
+            <a class="tag" href="#">Slides</a>
+            <a class="tag" href="#">Zenodo</a>
+          </div>
+        </article>
+        <p class="placeholder-note">← Replace the card above with your actual presentations.</p>
+      </div>
+    </section>
+
+    <!-- ─── Projects ──────────────────────────────────────────────────── -->
+    <section id="projects" class="section section--projects">
+      <div class="container">
+        <h2 class="section-title">Projects</h2>
+        <div class="projects-grid">
+          <article class="proj-card">
+            <h3 class="proj-name">
+              <a href="https://github.com/NCMBianchi/DrugRepurposing" target="_blank" rel="noopener">DrugRepurposing</a>
+            </h3>
+            <p class="proj-desc">Automated drug repurposing pipeline for rare diseases. Uses Monarch API, DGIdb, RDKit, Node2vec, XGBoost, and PyTorch Geometric.</p>
+            <div class="proj-tags">
+              <span class="tag">Python</span><span class="tag">Docker</span><span class="tag">Flask</span><span class="tag">GNN</span>
+            </div>
+          </article>
+          <article class="proj-card">
+            <h3 class="proj-name">
+              <a href="https://github.com/NCMBianchi/scCulturePredict" target="_blank" rel="noopener">scCulturePredict</a>
+            </h3>
+            <p class="proj-desc">R package for predicting cell culture media from RNAseq phenotypic fingerprints.</p>
+            <div class="proj-tags">
+              <span class="tag">R</span><span class="tag">scRNAseq</span><span class="tag">Bioconductor</span>
+            </div>
+          </article>
+          <article class="proj-card">
+            <h3 class="proj-name">
+              <a href="https://github.com/NCMBianchi/OMIM-converter" target="_blank" rel="noopener">OMIM-converter</a>
+            </h3>
+            <p class="proj-desc">JavaScript tool for Open Data Science URI conversion (OMIM identifiers).</p>
+            <div class="proj-tags">
+              <span class="tag">JavaScript</span><span class="tag">Open Data</span>
+            </div>
+          </article>
+          <article class="proj-card">
+            <h3 class="proj-name">
+              <a href="https://github.com/NCMBianchi/x86_bioinformatics_setup" target="_blank" rel="noopener">x86_bioinformatics_setup</a>
+            </h3>
+            <p class="proj-desc">Bash script for one-command installation of x86_64 bioinformatics tools.</p>
+            <div class="proj-tags">
+              <span class="tag">Shell</span><span class="tag">DevOps</span>
+            </div>
+          </article>
+        </div>
+        <p class="projects-more">
+          More on <a href="https://github.com/NCMBianchi" target="_blank" rel="noopener">GitHub ↗</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── Contact ───────────────────────────────────────────────────── -->
+    <section id="contact" class="section section--contact">
+      <div class="container">
+        <h2 class="section-title">Contact</h2>
+        <ul class="contact-list">
+          <li>📍 Milan, Italy</li>
+          <!-- Email addresses — uncomment when ready to display publicly
+          <li>📧 <a href="mailto:ncmbianchi@protonmail.com">ncmbianchi@protonmail.com</a></li>
+          <li>📧 <a href="mailto:bianchi.nicolo@hsr.it">bianchi.nicolo@hsr.it</a></li>
+          -->
+          <li>🔬 <a href="https://orcid.org/0009-0000-4202-7154" target="_blank" rel="noopener">ORCID 0009-0000-4202-7154</a></li>
+          <li>💼 <a href="https://www.linkedin.com/in/ncmbianchi/" target="_blank" rel="noopener">LinkedIn</a></li>
+          <li>🐙 <a href="https://github.com/NCMBianchi" target="_blank" rel="noopener">GitHub</a></li>
+          <li>🦊 <a href="https://gitlab.com/NCMBianchi" target="_blank" rel="noopener">GitLab</a></li>
+          <li>🍵 <a href="https://gitea.com/ncmbianchi" target="_blank" rel="noopener">Gitea</a></li>
+          <li>🧬 <a href="https://support.bioconductor.org/u/80934/" target="_blank" rel="noopener">Bioconductor</a></li>
+          <li>📊 <a href="https://www.kaggle.com/nbianchi" target="_blank" rel="noopener">Kaggle</a></li>
+          <li>🤗 <a href="https://huggingface.co/NCMBianchi" target="_blank" rel="noopener">Hugging Face</a></li>
+          <li>📝 <a href="https://gist.github.com/NCMBianchi" target="_blank" rel="noopener">GitHub Gists</a></li>
+          <li>✍️ <a href="https://goshootit.net" target="_blank" rel="noopener">Blog</a></li>
+          <li>📷 <a href="https://goshootit.myportfolio.com" target="_blank" rel="noopener">Photography</a></li>
+          <li>🎨 <a href="https://www.behance.net/NCMBianchi" target="_blank" rel="noopener">Behance</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer id="site-footer">
+    <div class="container footer-inner">
+      <p>© 2026 Niccolò Bianchi · <a href="LICENSE">MIT License</a></p>
+      <div class="footer-row">
+        <span class="footer-attr">Terminal theme: <a href="https://github.com/YabataDesign/afterglow-theme" target="_blank" rel="noopener">Afterglow</a> by YabataDesign</span>
+        <div class="footer-badges">
+          <a class="fbadge" href="https://bun.sh" target="_blank" rel="noopener">bun: planned</a>
+          <a class="fbadge" href="https://www.rust-lang.org" target="_blank" rel="noopener">rust: planned</a>
+          <a class="fbadge" href="https://codecov.io/gh/NCMBianchi/ncmbianchi.github.io" target="_blank" rel="noopener">codecov: pending</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
