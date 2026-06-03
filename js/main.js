@@ -8,7 +8,6 @@
   ══════════════════════════════════════════════════════════════════ */
 
   var TERM     = document.getElementById('term-body');
-  var INIT_CUR = document.getElementById('init-cursor');
   var SKIP_BTN = document.getElementById('term-skip');
 
   if (TERM) {
@@ -37,75 +36,53 @@
     document.addEventListener('keydown', doSkip, { once: true });
 
     /* ── Layout constants ────────────────────────────────────────── */
-    var W  = 59;  /* TUI inner width                  */
-    var C1 = 22;  /* col 1 (Academic Studies / Repos) */
-    var C2 = 18;  /* col 2 (Publications / Skills)    */
-    var C3 = 19;  /* col 3 (Presentations / Interests)*/
-    /* Layout: 2 rows × 3 columns
+    /* 2 rows × 3 columns
      *  Row 1: [0] Academic Studies  [1] Publications  [2] Presentations
      *  Row 2: [3] Repos             [4] Skills        [5] Interests
+     *  W = C1 + C2 + C3 = 22 + 18 + 19 = 59
      */
+    var W = 59, C1 = 22, C2 = 18, C3 = 19;
 
     /* ── Section data ────────────────────────────────────────────── */
-    /*
-     * Sections are arranged in 2 columns of 3 rows:
-     *   Col 1 (indices 0-2): Academic Studies | Publications | Presentations
-     *   Col 2 (indices 3-5): Repos            | Skills        | Interests
-     */
+    /* items[] — multi-item sections pick a random entry per load    */
     var SECTIONS = [
       {
-        label: 'Academic Studies',
-        href: 'about.html',
-        output: {
-          href: 'about.html',
-          itemText: '2024 MSc in Bioinformatics for Computational Genomics',
-          restText: ' \u00b7 UniMI, PoliMI, LeidenUniv'
-        }
+        label: 'Academic Studies', href: 'about.html',
+        items: [
+          { text: '2024 MSc in Bioinformatics for Computational Genomics \u00b7 UniMI, PoliMI, LeidenUniv' }
+        ]
       },
       {
-        label: 'Publications',
-        href: 'publications.html',
-        output: {
-          href: 'https://doi.org/10.1186/s12859-026-06376-5',
-          itemText: 'doi:10.1186/s12859-026-06376-5',
-          restText: ' Bianchi et al. \u201cDesign and evaluation of semantically-valid\u2026'
-        }
+        label: 'Publications', href: 'publications.html',
+        items: [
+          { text: 'doi:10.1186/s12859-026-06376-5 Bianchi et al. \u201cDesign and evaluation of semantically-valid\u2026' }
+        ]
       },
       {
-        label: 'Presentations',
-        href: 'presentations.html',
-        output: {
-          href: 'https://doi.org/10.5281/zenodo.20322631',
-          itemText: 'zenodo:10.5281/zenodo.20322631',
-          restText: ' BioSB2026 \u201cGraphs & Networks\u201d, invited speaker'
-        }
+        label: 'Presentations', href: 'presentations.html',
+        items: [
+          { text: 'zenodo:10.5281/zenodo.20322631 BioSB2026 \u201cGraphs & Networks\u201d, invited speaker' }
+        ]
       },
       {
-        label: 'Repos',
-        href: 'repos.html',
-        output: {
-          href: 'https://github.com/genepi/umi-pipeline-nf/pull/92',
-          itemText: 'PR #92',
-          restText: ' \u2192 genepi/umi-pipeline-nf (fix dependencies)'
-        }
+        label: 'Repos', href: 'repos.html',
+        items: [
+          { text: 'PR #92 \u2192 genepi/umi-pipeline-nf (fix dependencies)' }
+        ]
       },
       {
-        label: 'Skills',
-        href: 'skills.html',
-        output: {
-          href: 'skills.html',
-          itemText: 'scRNAseq',
-          restText: ', Alphagenome, Snakemake, Nextflow, Python, R'
-        }
+        label: 'Skills', href: 'skills.html',
+        items: [
+          { text: 'scRNAseq'    }, { text: 'Alphagenome' }, { text: 'Snakemake' },
+          { text: 'Nextflow'    }, { text: 'Python'       }, { text: 'R'         }
+        ]
       },
       {
-        label: 'Interests',
-        href: 'interests.html',
-        output: {
-          href: 'interests.html',
-          itemText: 'photography',
-          restText: ', cooking, drawing, cinema'
-        }
+        label: 'Interests', href: 'interests.html',
+        items: [
+          { text: 'photography' }, { text: 'cooking' },
+          { text: 'drawing'     }, { text: 'cinema'  }
+        ]
       }
     ];
 
@@ -123,68 +100,86 @@
     }
 
     function esc(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    /* ── Single TUI cell ─────────────────────────────────────────── */
-    function buildCell(idx, selIdx, done, width) {
-      var isDone = done.indexOf(idx) >= 0;
-      var isSel  = idx === selIdx;
-      var pfx    = isSel ? '  \u25b8 ' : (isDone ? '  \u2713 ' : '    ');
-      var label  = SECTIONS[idx].label;
-      var content = pfx + label;
-      var padding = rep(' ', width - content.length);
-      var link = '<a class="tc-nav" href="' + SECTIONS[idx].href + '">';
-      if (isSel) {
-        return '<span class="tc-sel">' + esc(pfx) + link + esc(label) + '</a></span>' + padding;
-      }
-      if (isDone) {
-        return '<span class="tc-done">' + esc(pfx) + link + esc(label) + '</a></span>' + padding;
-      }
-      return esc(pfx) + link + esc(label) + '</a>' + padding;
-    }
-
-    /* ── Full TUI box ────────────────────────────────────────────── */
+    /* ── TUI cell builders ───────────────────────────────────────── */
     /*
-     * isFirst = true  → show name/email/title header above menu
-     * isFirst = false → compact 2-row menu only
-     * Layout: 2 rows × 3 cols
+     * Each cell renders as:
+     *   <a class="tc-cell tc-cell--STATE" href="…" data-state="STATE">
+     *     <span class="tc-pfx">  ▸ </span>Label<span class="tc-pad">   </span>
+     *   </a>
+     *
+     * The .tc-pfx span is swapped by hover listeners (idle → ▸, back to spaces).
+     * Padding fills the remaining column width so box characters align.
      */
-    function buildTUI(selIdx, done, isFirst) {
+    function buildIdleCell(idx, selIdx, width) {
+      var isSel  = (selIdx >= 0 && idx === selIdx);
+      var pfx    = isSel ? '  \u25b8 ' : '    ';
+      var label  = SECTIONS[idx].label;
+      var padLen = width - 4 - label.length;
+      var state  = isSel ? 'sel' : 'idle';
+      return '<a class="tc-cell tc-cell--' + state + '" href="' + SECTIONS[idx].href +
+             '" data-state="' + state + '">' +
+             '<span class="tc-pfx">' + esc(pfx) + '</span>' + esc(label) +
+             '<span class="tc-pad">' + rep(' ', padLen < 0 ? 0 : padLen) + '</span></a>';
+    }
+
+    function buildDoneCell(idx, width) {
+      var label  = SECTIONS[idx].label;
+      var padLen = width - 4 - label.length;
+      return '<a class="tc-cell tc-cell--done" href="' + SECTIONS[idx].href +
+             '" data-state="done">' +
+             '<span class="tc-pfx">  \u2713 </span>' + esc(label) +
+             '<span class="tc-pad">' + rep(' ', padLen < 0 ? 0 : padLen) + '</span></a>';
+    }
+
+    function cell(idx, selIdx, done, width) {
+      return done.indexOf(idx) >= 0 ? buildDoneCell(idx, width) : buildIdleCell(idx, selIdx, width);
+    }
+
+    /* ── TUI box ─────────────────────────────────────────────────── */
+    /* Single persistent element; always includes the header.
+     * selIdx < 0 = no cursor (final/pre-animation state).
+     */
+    function buildTUI(selIdx, done) {
       var top   = '\u256d' + rep('\u2500', W) + '\u256e\n';
-      var blank = '\u2502' + rep(' ', W) + '\u2502\n';
+      var blank = '\u2502' + rep(' ', W)      + '\u2502\n';
       var bot   = '\u2570' + rep('\u2500', W) + '\u256f';
       var out   = top;
 
-      if (isFirst) {
-        out += '\u2502' + esc(padR('  Niccol\u00f2 Bianchi', W)) + '\u2502\n';
-        out += '\u2502' + esc(padR('  ncmbianchi.srtiget@proton.me', W)) + '\u2502\n';
-        out += '\u2502' + esc(padR('  Bioinformatician & Data Analysis Dev', W)) + '\u2502\n';
-        out += blank;
-      }
+      out += '\u2502' + esc(padR('  Niccol\u00f2 Bianchi', W))                       + '\u2502\n';
+      out += '\u2502' + esc(padR('  ncmbianchi.srtiget@proton.me', W))               + '\u2502\n';
+      out += '\u2502' + esc(padR('  Bioinformatician & Data Analysis Dev', W))       + '\u2502\n';
+      out += blank;
 
-      /* 2 rows × 3 columns */
       for (var r = 0; r < 2; r++) {
-        out += '\u2502' + buildCell(r * 3 + 0, selIdx, done, C1)
-                        + buildCell(r * 3 + 1, selIdx, done, C2)
-                        + buildCell(r * 3 + 2, selIdx, done, C3)
-                        + '\u2502\n';
+        var i0 = r * 3, i1 = r * 3 + 1, i2 = r * 3 + 2;
+        out += '\u2502' + cell(i0, selIdx, done, C1) +
+                          cell(i1, selIdx, done, C2) +
+                          cell(i2, selIdx, done, C3) + '\u2502\n';
       }
 
-      out += bot;
-      return out;
+      return out + bot;
     }
 
-    /* ── Section output line ─────────────────────────────────────── */
+    /* ── Output line ─────────────────────────────────────────────── */
+    /* Format:  ❯  [bold clickable Section]   random-item, others, …  */
     function buildOutput(section) {
-      var o = section.output;
-      var ext = o.href.startsWith('http');
-      var tgt = ext ? ' target="_blank" rel="noopener"' : '';
-      return '  <a class="tc-item" href="' + o.href + '"' + tgt + '>' +
-             esc(o.itemText) + '</a>' + esc(o.restText) + ', \u2026';
+      var items  = section.items;
+      var ri     = items.length > 1 ? Math.floor(Math.random() * items.length) : 0;
+      var chosen = items[ri];
+      var others = items.filter(function (_, j) { return j !== ri; });
+
+      var text = esc(chosen.text);
+      if (others.length) text += ', ' + others.map(function (o) { return esc(o.text); }).join(', ');
+      text += ', \u2026';
+
+      var ext  = section.href.startsWith('http') ? ' target="_blank" rel="noopener"' : '';
+      var link = '<a class="tc-section-link" href="' + section.href + '"' + ext + '>' +
+                 '<strong>' + esc(section.label) + '</strong></a>';
+
+      return '  <span class="tc-gum">\u276f</span>  ' + link + '   ' + text;
     }
 
     /* ── Prompt HTML ─────────────────────────────────────────────── */
@@ -197,7 +192,7 @@
              '<span class="tc-status"> \u25e6</span>';
     }
 
-    /* ── Type a plain string into a text node ────────────────────── */
+    /* ── Type plain text into a span ─────────────────────────────── */
     async function typeText(el, text, speed) {
       for (var i = 0; i < text.length; i++) {
         if (SKIP) { el.textContent += text.slice(i); return; }
@@ -206,61 +201,141 @@
       }
     }
 
-    /* ── Main animation sequence ─────────────────────────────────── */
+    /* ── Hover listeners (added after animation ends) ────────────── */
+    function attachHoverListeners(tuiEl) {
+      tuiEl.addEventListener('mouseover', function (e) {
+        var c = e.target.closest('.tc-cell');
+        if (!c) return;
+        var state = c.dataset.state;
+        if (state !== 'idle' && state !== 'done') return;
+        var p = c.querySelector('.tc-pfx');
+        if (p) p.textContent = '  \u25b8 ';
+      });
+      tuiEl.addEventListener('mouseout', function (e) {
+        var c = e.target.closest('.tc-cell');
+        if (!c) return;
+        var p = c.querySelector('.tc-pfx');
+        if (c.dataset.state === 'idle') {
+          if (p) p.textContent = '    ';
+        } else if (c.dataset.state === 'done') {
+          if (p) p.textContent = '  \u2713 ';
+        }
+      });
+    }
+
+    /* ── Main animation ──────────────────────────────────────────── */
     async function runAnimation() {
+
+      /* 1 — initial blinking cursor */
+      var initCur = document.createElement('span');
+      initCur.className = 'tc-cursor';
+      initCur.textContent = '\u258c';
+      TERM.appendChild(initCur);
+      await wait(650);
+
+      /* 2 — prompt line + typed command */
+      initCur.remove();
+
+      var pLine  = document.createElement('div');
+      pLine.className = 'term-ln';
+      pLine.innerHTML = promptHTML();
+
+      var cmdEl  = document.createElement('span');
+      cmdEl.className = 'tc-cmd';
+      var cmdCur = document.createElement('span');
+      cmdCur.className = 'tc-cursor';
+      cmdCur.textContent = '\u258c';
+
+      pLine.appendChild(document.createTextNode(' '));
+      pLine.appendChild(cmdEl);
+      pLine.appendChild(cmdCur);
+      TERM.appendChild(pLine);
+
+      await wait(400);
+      await typeText(cmdEl, 'myself --tui', 55);
+      await wait(200);
+      cmdCur.style.display = 'none';
+
+      /* 3 — TUI (single, persistent; cursor starts on item 0) */
+      var tuiEl = document.createElement('pre');
+      tuiEl.className = 'term-tui animating';
+      tuiEl.innerHTML = buildTUI(0, []);
+      TERM.appendChild(tuiEl);
+
+      /* 4 — shortkeys bar */
+      var keysEl = document.createElement('div');
+      keysEl.className = 'term-keys';
+      keysEl.textContent = '  [\u2191\u2193] navigate  [\u21b5] open  [h] help  [q] quit';
+      TERM.appendChild(keysEl);
+
+      /* 5 — output container (lines accumulate here) */
+      var outBox = document.createElement('div');
+      outBox.className = 'term-outputs';
+      TERM.appendChild(outBox);
+
+      await wait(SKIP ? 0 : 350);
+
+      /* 6 — cursor moves through sections */
       var done = [];
 
       for (var i = 0; i < SECTIONS.length; i++) {
+        tuiEl.innerHTML = buildTUI(i, done);        /* cursor on i   */
+        await wait(SKIP ? 0 : 950);                 /* ~1 s pause    */
 
-        /* Prompt + command line */
-        var block  = document.createElement('div');
-        block.className = 'term-block';
-
-        var pLine  = document.createElement('div');
-        pLine.className = 'term-ln';
-        pLine.innerHTML = promptHTML();
-
-        var cmdEl  = document.createElement('span');
-        cmdEl.className = 'tc-cmd';
-        var cur    = document.createElement('span');
-        cur.className = 'tc-cursor';
-        cur.textContent = '\u258c';
-
-        pLine.appendChild(document.createTextNode(' '));
-        pLine.appendChild(cmdEl);
-        pLine.appendChild(cur);
-        block.appendChild(pLine);
-        TERM.appendChild(block);
-
-        /* Hide static initial cursor on first iteration */
-        if (i === 0 && INIT_CUR) {
-          INIT_CUR.style.animation = 'none';
-          INIT_CUR.style.opacity   = '0';
-        }
-
-        await wait(i === 0 ? 900 : 250);
-        await typeText(cmdEl, 'myself -h', i === 0 ? 55 : 28);
-        await wait(180);
-        cur.style.display = 'none';
-
-        /* TUI — header only on first appearance */
-        var tuiEl  = document.createElement('pre');
-        tuiEl.className = 'term-tui';
-        tuiEl.innerHTML = buildTUI(i, done, i === 0);
-        block.appendChild(tuiEl);
-
-        await wait(SKIP ? 0 : 1000); /* ~1 s pause — TUI visible before cursor selects */
-
-        /* Output line */
-        var outEl  = document.createElement('pre');
-        outEl.className = 'term-out';
-        outEl.innerHTML = buildOutput(SECTIONS[i]);
-        block.appendChild(outEl);
         done.push(i);
+        var nextSel = i < SECTIONS.length - 1 ? i + 1 : -1;
+        tuiEl.innerHTML = buildTUI(nextSel, done);  /* i done, next  */
 
-        block.scrollIntoView({ behavior: SKIP ? 'auto' : 'smooth', block: 'nearest' });
-        await wait(SKIP ? 0 : 500);
+        var outEl = document.createElement('pre');
+        outEl.className = 'term-out';
+        outEl.innerHTML  = buildOutput(SECTIONS[i]);
+        outBox.appendChild(outEl);
+        outEl.scrollIntoView({ behavior: SKIP ? 'auto' : 'smooth', block: 'nearest' });
+
+        await wait(SKIP ? 0 : 450);
       }
+
+      /* 7 — final state: all done, hover enabled */
+      tuiEl.innerHTML = buildTUI(-1, done);
+      tuiEl.classList.remove('animating');
+      attachHoverListeners(tuiEl);
+
+      /* 8 — prompt reappears (q was pressed inside TUI), then cowsay command */
+      await wait(SKIP ? 0 : 700);
+
+      var qLine = document.createElement('div');
+      qLine.className = 'term-ln';
+      qLine.innerHTML = promptHTML();
+      var qCmd = document.createElement('span');
+      qCmd.className = 'tc-cmd';
+      var qCur = document.createElement('span');
+      qCur.className = 'tc-cursor';
+      qCur.textContent = '\u258c';
+      qLine.appendChild(document.createTextNode(' '));
+      qLine.appendChild(qCmd);
+      qLine.appendChild(qCur);
+      TERM.appendChild(qLine);
+      qLine.scrollIntoView({ behavior: SKIP ? 'auto' : 'smooth', block: 'nearest' });
+
+      await wait(SKIP ? 0 : 380);
+      await typeText(qCmd, 'cowsay "$(cat many_thanks.txt)"', 42);
+      await wait(SKIP ? 0 : 200);
+      qCur.style.display = 'none';
+
+      var cowEl = document.createElement('pre');
+      cowEl.className = 'term-out tc-cow';
+      cowEl.textContent = [
+        ' ________________________',
+        '< thanks for visiting!   >',
+        ' ------------------------',
+        '        \\   ^__^',
+        '         \\  (oo)\\_______',
+        '            (__)\\       )\\/\\',
+        '                ||----w |',
+        '                ||     ||'
+      ].join('\n');
+      TERM.appendChild(cowEl);
+      cowEl.scrollIntoView({ behavior: SKIP ? 'auto' : 'smooth', block: 'nearest' });
 
       if (SKIP_BTN) SKIP_BTN.style.display = 'none';
     }
@@ -269,7 +344,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════════════
-     Sticky nav: scroll-spy (in-page anchors only)
+     Sticky nav scroll-spy (in-page anchors only)
   ══════════════════════════════════════════════════════════════════ */
   var navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
   var sections = [];
@@ -280,8 +355,8 @@
 
   function onScroll() {
     if (!sections.length) return;
-    var scrollY  = window.scrollY + 80;
-    var current  = sections[0];
+    var scrollY = window.scrollY + 80;
+    var current = sections[0];
     for (var i = 0; i < sections.length; i++) {
       if (sections[i].offsetTop <= scrollY) current = sections[i];
     }

@@ -275,7 +275,7 @@ body.page-landing {
 .term-content::-webkit-scrollbar-track  { background: transparent; }
 .term-content::-webkit-scrollbar-thumb  { background: #4d4d4d; border-radius: 2px; }
 
-/* Afterglow ANSI colour mapping for terminal chrome */
+/* Afterglow ANSI colour mapping for terminal chrome (fish theme exact values) */
 .tc-host   { color: #ff8800; }   /* orange  — ssh_color: (set_color ff8800)      */
 .tc-fish   { color: #7dd6cf; }   /* cyan    — success_color: (set_color cyan)    */
 .tc-path   { color: #e5b567; }   /* yellow  — directory_color: $fish_color_quote */
@@ -284,38 +284,70 @@ body.page-landing {
 .tc-status { color: #d6d6d6; }   /* fg      — normal_color: (set_color normal)   */
 .tc-cursor { color: #7dd6cf; animation: blink 0.75s step-end infinite; }
 .tc-cmd    { color: #d6d6d6; }
-.tc-sel    { color: #9f4e85; font-weight: 700; } /* magenta — selected item   */
-.tc-done   { color: #505050; }                   /* bright-black — done items  */
-.tc-head   { color: #7dd6cf; }                   /* cyan — output section ttl  */
-.tc-rule   { color: #4d4d4d; }                   /* selection-bg — dividers    */
-.tc-link   { color: #7e8e50; text-decoration: underline; cursor: pointer; }
-.tc-link:hover { color: #6c99bb; text-decoration: none; }
-/* clickable output items — Afterglow blue */
-.tc-item   { color: #6c99bb; text-decoration: underline; cursor: pointer; }
-.tc-item:hover { color: #7dd6cf; text-decoration: none; }
-/* clickable TUI section labels */
-.tc-nav  { color: inherit; text-decoration: none; }
-.tc-nav:hover { text-decoration: underline; }
+.tc-head   { color: #7dd6cf; }
+.tc-rule   { color: #4d4d4d; }
 
-.term-block { margin-bottom: 0.6em; }
-.term-ln    { white-space: nowrap; }
-
+/* ── TUI cell styles ── */
+/* disable ligatures + fix inline element alignment inside <pre> */
 .term-tui {
-  margin:      0;
-  margin-top:  0.3em;
-  font-family: inherit;
-  font-size:   inherit;
-  line-height: inherit;
-  white-space: pre;
+  margin:                   0;
+  margin-top:               0.3em;
+  font-family:              inherit;
+  font-size:                inherit;
+  line-height:              inherit;
+  white-space:              pre;
+  font-feature-settings:    "liga" 0;
+  font-variant-ligatures:   none;
+  letter-spacing:           0;
+  word-spacing:             0;
 }
+.term-tui a,
+.term-tui span {
+  display:         inline;
+  margin:          0;
+  padding:         0;
+  border:          0;
+  text-decoration: none;
+}
+.term-tui.animating { pointer-events: none; }
+
+/* cell state colours */
+.tc-cell          { color: #d6d6d6; font-weight: normal; }
+.tc-cell--sel     { color: #9f4e85; font-weight: 700; }  /* Afterglow magenta — animation cursor */
+.tc-cell--done    { color: #505050; }                     /* Afterglow bright-black */
+.tc-cell--idle:hover { color: #9b8bf4; font-weight: 700; } /* lilac — interactive hover */
+.tc-cell--done:hover { color: #9b8bf4; font-weight: 700; } /* ✓ swaps to ▸ on hover */
+
+/* ── Shortkeys bar & output area ── */
+.term-keys {
+  color:       #505050;
+  font-size:   0.75rem;
+  margin-top:  0.4em;
+  white-space: pre;
+  user-select: none;
+}
+
+.term-outputs { margin-top: 0.3em; }
+
 .term-out {
   margin:      0;
-  margin-top:  0.15em;
+  margin-top:  0.25em;
   font-family: inherit;
   font-size:   inherit;
   line-height: inherit;
   white-space: pre-wrap;
 }
+
+/* ❯ Gum canonical input indicator */
+.tc-gum { color: #9b8bf4; }                               /* lilac — matches hover */
+
+/* bold clickable section name in output lines */
+.tc-section-link             { color: inherit; text-decoration: none; }
+.tc-section-link strong      { font-weight: 700; color: #9b8bf4; }   /* always lilac */
+.tc-section-link:hover strong { color: #b5a7f7; text-decoration: underline; }
+
+/* cowsay — decorative, normal terminal colour */
+.tc-cow { color: #d6d6d6; margin-top: 0.6em; }
 
 /* ── Terminal footer — single line at bottom of full-page terminal ── */
 .term-footer {
