@@ -36,12 +36,25 @@
     document.addEventListener('keydown', doSkip, { once: true });
 
     /* ── Layout constants ────────────────────────────────────────── */
-    /* 2 rows × 3 columns
-     *  Row 1: [0] Academic Studies  [1] Publications  [2] Presentations
-     *  Row 2: [3] Repos             [4] Skills        [5] Interests
-     *  W = C1 + C2 + C3 = 22 + 18 + 19 = 59
+    /* Responsive grid: sections flow row-major into N columns, N chosen by
+     * the available width (3 → 2 → 1). Column widths and the box width W are
+     * derived per layout; the header lines set a floor on W.
+     *
+     *   3 cols: Academic|Publications|Presentations / Repos|Skills|Interests
+     *   2 cols: Academic|Publications / Presentations|Repos / Skills|Interests
+     *   1 col : one section per row
      */
-    var W = 59, C1 = 22, C2 = 18, C3 = 19;
+    var PFX = 4, GAP = 2;                     /* prefix cols + trailing gap per cell */
+    var HEADER = [
+      '  Niccolò Bianchi',
+      '  ncmbianchi.srtiget@proton.me',
+      '  Bioinformatician & Data Analysis Dev'
+    ];
+    var HEADMAX = 0;
+    for (var _h = 0; _h < HEADER.length; _h++) HEADMAX = Math.max(HEADMAX, HEADER[_h].length);
+
+    var LAYOUT = null;                        /* current {ncols, rows, colW[], W} */
+    var TUI_EL = null, TUI_DONE = [], ANIM_DONE = false;   /* refs for resize rebuild */
 
     /* ── Section data ────────────────────────────────────────────── */
     /* items[] — multi-item sections pick a random entry per load    */
@@ -142,44 +155,145 @@
     /* Single persistent element; always includes the header.
      * selIdx < 0 = no cursor (final/pre-animation state).
      */
-    function buildTUI(selIdx, done) {
+    /* \u2500\u2500 Responsive layout \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+    /* Build {ncols, rows, colW[], W} for a given column count. Each column
+     * is sized to its widest label; the header sets a floor on total W and
+     * any surplus is added to the last column so cells still fill the box. */
+    function computeLayout(nc) {
+      var rows = Math.ceil(SECTIONS.length / nc);
+      var colW = [];
+      for (var c = 0; c < nc; c++) {
+        var maxL = 0;
+        for (var r = 0; r < rows; r++) {
+          var idx = r * nc + c;
+          if (idx < SECTIONS.length) maxL = Math.max(maxL, SECTIONS[idx].label.length);
+        }
+        colW.push(PFX + maxL + GAP);
+      }
+      var sum = 0;
+      for (var k = 0; k < colW.length; k++) sum += colW[k];
+      var W = Math.max(sum, HEADMAX);
+      if (W > sum) colW[nc - 1] += (W - sum);   /* pad last col to fill header width */
+      return { ncols: nc, rows: rows, colW: colW, W: W };
+    }
+
+    /* Pick the widest column count whose box (W + 2 borders) fits `cols`;
+     * 1 column is the hard floor. */
+    function layoutFor(cols) {
+      var tries = [3, 2, 1];
+      for (var i = 0; i < tries.length; i++) {
+        var L = computeLayout(tries[i]);
+        if (L.W + 2 <= cols || tries[i] === 1) return L;
+      }
+      return computeLayout(1);
+    }
+
+    /* available character columns for the TUI (viewport-clamped) */
+    function availCols() {
+      var cw   = charW();
+      var left = TERM.getBoundingClientRect().left;
+      var vw   = window.innerWidth - 2 * left;
+      var px   = Math.min(TERM.clientWidth || vw, vw > 0 ? vw : (TERM.clientWidth || 320));
+      return Math.floor(px / cw);
+    }
+
+    /* \u2500\u2500 TUI box \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+    /* Single persistent element; always includes the header.
+     * selIdx < 0 = no cursor (final/pre-animation state).
+     * L defaults to the current global LAYOUT.
+     */
+    function buildTUI(selIdx, done, L) {
+      L = L || LAYOUT;
+      var W     = L.W;
       var top   = '\u256d' + rep('\u2500', W) + '\u256e\n';
       var blank = '\u2502' + rep(' ', W)      + '\u2502\n';
       var bot   = '\u2570' + rep('\u2500', W) + '\u256f';
       var out   = top;
 
-      out += '\u2502' + esc(padR('  Niccol\u00f2 Bianchi', W))                       + '\u2502\n';
-      out += '\u2502' + esc(padR('  ncmbianchi.srtiget@proton.me', W))               + '\u2502\n';
-      out += '\u2502' + esc(padR('  Bioinformatician & Data Analysis Dev', W))       + '\u2502\n';
+      for (var h = 0; h < HEADER.length; h++) out += '\u2502' + esc(padR(HEADER[h], W)) + '\u2502\n';
       out += blank;
 
-      for (var r = 0; r < 2; r++) {
-        var i0 = r * 3, i1 = r * 3 + 1, i2 = r * 3 + 2;
-        out += '\u2502' + cell(i0, selIdx, done, C1) +
-                          cell(i1, selIdx, done, C2) +
-                          cell(i2, selIdx, done, C3) + '\u2502\n';
+      for (var r = 0; r < L.rows; r++) {
+        out += '\u2502';
+        for (var c = 0; c < L.ncols; c++) {
+          var idx = r * L.ncols + c;
+          out += idx < SECTIONS.length ? cell(idx, selIdx, done, L.colW[c])
+                                       : rep(' ', L.colW[c]);   /* trailing empty cell */
+        }
+        out += '\u2502\n';
       }
 
       return out + bot;
     }
 
     /* ── Output line ─────────────────────────────────────────────── */
-    /* Format:  ❯  [bold clickable Section]   random-item, others, …  */
-    function buildOutput(section) {
+    /* Format:  ❯  [bold clickable Section]   item, others, …
+     *
+     * Lines are truncated to fit the current render on a single line: the
+     * section name is always shown in full; the trailing item text is cut to
+     * the columns that actually fit (measured live) and closed with an ellipsis.
+     * Re-fitted on resize and once the webfont finishes loading.
+     */
+
+    /* width of one monospace char, measured live (webfont may load late) */
+    function charW() {
+      var s = document.createElement('span');
+      s.className = 'term-out';
+      s.style.cssText = 'visibility:hidden;position:absolute;white-space:pre;';
+      s.textContent = rep('0', 100);
+      TERM.appendChild(s);
+      var w = s.getBoundingClientRect().width / 100;
+      s.remove();
+      return w || 8;
+    }
+
+    /* pick the displayed item once, so re-fits stay stable (no re-randomise) */
+    function makeOutput(section) {
       var items  = section.items;
       var ri     = items.length > 1 ? Math.floor(Math.random() * items.length) : 0;
       var chosen = items[ri];
       var others = items.filter(function (_, j) { return j !== ri; });
+      var full   = chosen.text +
+                   (others.length ? ', ' + others.map(function (o) { return o.text; }).join(', ') : '');
+      return { label: section.label, href: section.href, full: full };
+    }
 
-      var text = esc(chosen.text);
-      if (others.length) text += ', ' + others.map(function (o) { return esc(o.text); }).join(', ');
-      text += ', \u2026';
+    /* fit raw `full` into `avail` columns: ", \u2026" when it fits, else cut + " \u2026" */
+    function fitText(full, avail) {
+      if (full.length + 3 <= avail) return esc(full) + ', \u2026';   /* ", \u2026" = 3 cols */
+      var cut = avail - 2;                                           /* reserve " \u2026"   */
+      if (cut < 1) cut = 1;
+      var t  = full.slice(0, cut);
+      var sp = t.lastIndexOf(' ');
+      if (sp > cut - 12 && sp > 0) t = t.slice(0, sp);               /* avoid mid-word cut */
+      t = t.replace(/[ ,]+$/, '');
+      return esc(t) + ' \u2026';
+    }
 
-      var ext  = section.href.startsWith('http') ? ' target="_blank" rel="noopener"' : '';
-      var link = '<a class="tc-section-link" href="' + section.href + '"' + ext + '>' +
-                 '<strong>' + esc(section.label) + '</strong></a>';
+    /* render one output <pre> from its stored dataset, truncated to fit */
+    function renderOutputEl(el) {
+      var label = el.dataset.label, href = el.dataset.href, full = el.dataset.full;
+      /* clamp to the viewport: a too-wide TUI box can stretch the shared
+         container past the screen, so el.clientWidth alone would over-measure.
+         window.innerWidth \u2212 2\u00d7left \u2248 content width inside the page padding. */
+      var left  = el.getBoundingClientRect().left;
+      var vw     = window.innerWidth - 2 * left;
+      var px    = Math.min(el.clientWidth, vw > 0 ? vw : el.clientWidth);
+      var cols  = Math.floor(px / charW());
+      var avail = cols - (label.length + 8) - 1;   /* "  \u276f  LABEL   " + 1 col slack */
+      if (avail < 6) avail = 6;
+      var ext   = href.indexOf('http') === 0 ? ' target="_blank" rel="noopener"' : '';
+      var link  = '<a class="tc-section-link" href="' + href + '"' + ext +
+                  '><strong>' + esc(label) + '</strong></a>';
+      el.innerHTML = '  <span class="tc-gum">\u276f</span>  ' + link + '   ' + fitText(full, avail);
+    }
 
-      return '  <span class="tc-gum">\u276f</span>  ' + link + '   ' + text;
+    /* re-fit every output line (resize / late font load) */
+    function refitOutputs() {
+      var els = document.querySelectorAll('.term-out:not(.tc-cow)');
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].dataset.full !== undefined) renderOutputEl(els[i]);
+      }
     }
 
     /* ── Prompt HTML ─────────────────────────────────────────────── */
@@ -257,10 +371,12 @@
       cmdCur.style.display = 'none';
 
       /* 3 — TUI (single, persistent; cursor starts on item 0) */
+      LAYOUT = layoutFor(availCols());        /* choose column count for this width */
       var tuiEl = document.createElement('pre');
       tuiEl.className = 'term-tui animating';
       tuiEl.innerHTML = buildTUI(0, []);
       TERM.appendChild(tuiEl);
+      TUI_EL = tuiEl;
 
       /* 4 — shortkeys bar */
       var keysEl = document.createElement('div');
@@ -277,6 +393,7 @@
 
       /* 6 — cursor moves through sections */
       var done = [];
+      TUI_DONE = done;                        /* shared ref for resize rebuilds */
 
       for (var i = 0; i < SECTIONS.length; i++) {
         tuiEl.innerHTML = buildTUI(i, done);        /* cursor on i   */
@@ -288,17 +405,23 @@
 
         var outEl = document.createElement('pre');
         outEl.className = 'term-out';
-        outEl.innerHTML  = buildOutput(SECTIONS[i]);
+        var od = makeOutput(SECTIONS[i]);
+        outEl.dataset.label = od.label;
+        outEl.dataset.href  = od.href;
+        outEl.dataset.full  = od.full;
         outBox.appendChild(outEl);
+        renderOutputEl(outEl);                      /* truncate to fit render */
         outEl.scrollIntoView({ behavior: SKIP ? 'auto' : 'smooth', block: 'nearest' });
 
         await wait(SKIP ? 0 : 450);
       }
 
       /* 7 — final state: all done, hover enabled */
+      LAYOUT = layoutFor(availCols());        /* re-measure: webfont is loaded by now */
       tuiEl.innerHTML = buildTUI(-1, done);
       tuiEl.classList.remove('animating');
       attachHoverListeners(tuiEl);
+      ANIM_DONE = true;
 
       /* 8 — prompt reappears (q was pressed inside TUI), then cowsay command */
       await wait(SKIP ? 0 : 700);
@@ -325,9 +448,9 @@
       var cowEl = document.createElement('pre');
       cowEl.className = 'term-out tc-cow';
       cowEl.textContent = [
-        ' ________________________',
-        '< thanks for visiting!   >',
-        ' ------------------------',
+        '╭──────────────────────────╮',
+        '│  thanks for visiting!    │',
+        '╰──────────────────────────╯',
         '        \\   ^__^',
         '         \\  (oo)\\_______',
         '            (__)\\       )\\/\\',
@@ -339,6 +462,20 @@
 
       if (SKIP_BTN) SKIP_BTN.style.display = 'none';
     }
+
+    /* re-flow the TUI column count + re-fit output lines on resize and once
+       the webfont settles (char width shifts when the real font loads) */
+    function reflow() {
+      LAYOUT = layoutFor(availCols());
+      if (TUI_EL && ANIM_DONE) TUI_EL.innerHTML = buildTUI(-1, TUI_DONE);
+      refitOutputs();
+    }
+    var reflowT;
+    window.addEventListener('resize', function () {
+      clearTimeout(reflowT);
+      reflowT = setTimeout(reflow, 120);
+    });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(reflow);
 
     runAnimation().catch(function () {});
   }

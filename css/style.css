@@ -318,6 +318,15 @@ body.page-landing {
 .tc-cell--idle:hover { color: #9b8bf4; font-weight: 700; } /* lilac — interactive hover */
 .tc-cell--done:hover { color: #9b8bf4; font-weight: 700; } /* ✓ swaps to ▸ on hover */
 
+/* Lock each cell's 4-char prefix to an exact 4ch advance. The ▸ (U+25B8) and
+   ✓ (U+2713) glyphs render wider/narrower than 1ch when the browser falls back
+   to a symbol font, which drifts the data rows off the grid the border lines
+   sit on. A fixed-width inline-block forces the label to start at exactly 4ch
+   regardless of glyph advance. Scoped under .term-tui to beat the generic
+   `.term-tui span { display: inline }` rule above. No overflow:hidden — it would
+   shift the inline-block baseline and misalign the prefix vertically. */
+.term-tui .tc-pfx { display: inline-block; width: 4ch; }
+
 /* ── Shortkeys bar & output area ── */
 .term-keys {
   color:       #505050;
@@ -338,8 +347,9 @@ body.page-landing {
   white-space: pre-wrap;
 }
 
-/* ❯ Gum canonical input indicator */
-.tc-gum { color: #9b8bf4; }                               /* lilac — matches hover */
+/* ❯ Gum canonical input indicator — pinned to 1ch so the ❯ glyph can't shift
+   the truncation grid renderOutputEl() measures against (same guard as .tc-pfx) */
+.tc-gum { color: #9b8bf4; display: inline-block; width: 1ch; }   /* lilac — matches hover */
 
 /* bold clickable section name in output lines */
 .tc-section-link             { color: inherit; text-decoration: none; }
@@ -402,6 +412,16 @@ body.page-landing {
   .term-page        { height: auto; min-height: 100vh; padding: 1.5rem; }
   .term-footer      { flex-wrap: wrap; gap: 0.75rem; }
   .footer-copy      { margin-right: 0; width: 100%; }
+}
+
+/* Phones: shrink the terminal so the header line still fits once the TUI grid
+   collapses to fewer columns (JS reflows 3 → 2 → 1 by available width). */
+@media (max-width: 500px) {
+  .term-page { padding: 1rem; font-size: 0.78rem; }
+  .term-keys { font-size: 0.68rem; }
+}
+@media (max-width: 380px) {
+  .term-page { padding: 0.75rem; font-size: 0.72rem; }
 }
 
 /* ── 7. Pill / tag components ──────────────────────────────────────── */
