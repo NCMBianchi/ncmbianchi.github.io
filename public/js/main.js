@@ -60,7 +60,7 @@
     /* items[] — multi-item sections pick a random entry per load    */
     var SECTIONS = [
       {
-        label: 'Academic Studies', href: 'about.html',
+        label: 'Academic Studies', href: 'studies.html',
         items: [
           { text: '2024 MSc in Bioinformatics for Computational Genomics \u00b7 UniMI, PoliMI, LeidenUniv' }
         ]
@@ -116,6 +116,13 @@
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    /* pin a box-drawing run (─ ╭ ╮ ╰ ╯ │) to its exact character count so a
+       fallback-font substitution mid-glyph can't drift the row's total width
+       — see .tc-glyph in style.css */
+    function glyphRun(str, n) {
+      return '<span class="tc-glyph" style="width:' + n + 'ch">' + esc(str) + '</span>';
+    }
+
     /* ── TUI cell builders ───────────────────────────────────────── */
     /*
      * Each cell renders as:
@@ -152,10 +159,7 @@
     }
 
     /* ── TUI box ─────────────────────────────────────────────────── */
-    /* Single persistent element; always includes the header.
-     * selIdx < 0 = no cursor (final/pre-animation state).
-     */
-    /* \u2500\u2500 Responsive layout \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+    /* ── Responsive layout ──────────────────────────────────────────── */
     /* Build {ncols, rows, colW[], W} for a given column count. Each column
      * is sized to its widest label; the header sets a floor on total W and
      * any surplus is added to the last column so cells still fill the box. */
@@ -197,7 +201,7 @@
       return Math.floor(px / cw);
     }
 
-    /* \u2500\u2500 TUI box \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+    /* ── TUI box ─────────────────────────────────────────────────── */
     /* Single persistent element; always includes the header.
      * selIdx < 0 = no cursor (final/pre-animation state).
      * L defaults to the current global LAYOUT.
@@ -205,22 +209,26 @@
     function buildTUI(selIdx, done, L) {
       L = L || LAYOUT;
       var W     = L.W;
-      var top   = '\u256d' + rep('\u2500', W) + '\u256e\n';
-      var blank = '\u2502' + rep(' ', W)      + '\u2502\n';
-      var bot   = '\u2570' + rep('\u2500', W) + '\u256f';
+      var pipe  = glyphRun('\u2502', 1);
+      var top   = glyphRun('\u256d' + rep('\u2500', W) + '\u256e', W + 2) + '\n';
+      /* +2 trailing spaces on every content row: measured/reported drift
+         against the border rows in a real browser, compensated directly
+         rather than relying on glyph-width containment alone. */
+      var blank = pipe + rep(' ', W + 2) + pipe + '\n';
+      var bot   = glyphRun('\u2570' + rep('\u2500', W) + '\u256f', W + 2);
       var out   = top;
 
-      for (var h = 0; h < HEADER.length; h++) out += '\u2502' + esc(padR(HEADER[h], W)) + '\u2502\n';
+      for (var h = 0; h < HEADER.length; h++) out += pipe + esc(padR(HEADER[h], W + 2)) + pipe + '\n';
       out += blank;
 
       for (var r = 0; r < L.rows; r++) {
-        out += '\u2502';
+        out += pipe;
         for (var c = 0; c < L.ncols; c++) {
           var idx = r * L.ncols + c;
           out += idx < SECTIONS.length ? cell(idx, selIdx, done, L.colW[c])
                                        : rep(' ', L.colW[c]);   /* trailing empty cell */
         }
-        out += '\u2502\n';
+        out += rep(' ', 2) + pipe + '\n';
       }
 
       return out + bot;
@@ -247,20 +255,21 @@
       return w || 8;
     }
 
-    /* pick the displayed item once, so re-fits stay stable (no re-randomise) */
+    /* join every item in the order given — Studies/Publications/Presentations
+       are chronological (latest first) and Repos is by recency, all from
+       js/home-preview.js, so this must not reshuffle them. fitText() below
+       packs however many fit the line's width and only cuts (with the
+       fallback hardcoded items, single-entry, this is just that one item. */
     function makeOutput(section) {
-      var items  = section.items;
-      var ri     = items.length > 1 ? Math.floor(Math.random() * items.length) : 0;
-      var chosen = items[ri];
-      var others = items.filter(function (_, j) { return j !== ri; });
-      var full   = chosen.text +
-                   (others.length ? ', ' + others.map(function (o) { return o.text; }).join(', ') : '');
+      var full = section.items.map(function (o) { return o.text; }).join(', ');
       return { label: section.label, href: section.href, full: full };
     }
 
-    /* fit raw `full` into `avail` columns: ", \u2026" when it fits, else cut + " \u2026" */
+    /* fit raw `full` (already every available item, joined) into `avail`
+       columns: shown as-is if it all fits \u2014 no "\u2026" when there's nothing
+       left out \u2014 else cut at a word boundary and mark the cut with " \u2026". */
     function fitText(full, avail) {
-      if (full.length + 3 <= avail) return esc(full) + ', \u2026';   /* ", \u2026" = 3 cols */
+      if (full.length <= avail) return esc(full);
       var cut = avail - 2;                                           /* reserve " \u2026"   */
       if (cut < 1) cut = 1;
       var t  = full.slice(0, cut);
@@ -399,6 +408,17 @@
         tuiEl.innerHTML = buildTUI(i, done);        /* cursor on i   */
         await wait(SKIP ? 0 : 950);                 /* ~1 s pause    */
 
+        /* Swap in the real, live-fetched item list for this section (see
+           js/home-preview.js) if one arrived in time, replacing the
+           hardcoded fallback items baked into SECTIONS[i] above. The fetch
+           started as early as possible (home-preview.js loads before this
+           script), so by the time the loop reaches each index the await
+           below is usually already resolved. */
+        if (window.HomePreview && window.HomePreview[i]) {
+          var preview = await window.HomePreview[i];   /* never rejects — see withTimeout() */
+          if (preview && preview.length) SECTIONS[i].items = preview;
+        }
+
         done.push(i);
         var nextSel = i < SECTIONS.length - 1 ? i + 1 : -1;
         tuiEl.innerHTML = buildTUI(nextSel, done);  /* i done, next  */
@@ -427,7 +447,7 @@
       await wait(SKIP ? 0 : 700);
 
       var qLine = document.createElement('div');
-      qLine.className = 'term-ln';
+      qLine.className = 'term-ln term-ln--gap';
       qLine.innerHTML = promptHTML();
       var qCmd = document.createElement('span');
       qCmd.className = 'tc-cmd';
@@ -447,15 +467,16 @@
 
       var cowEl = document.createElement('pre');
       cowEl.className = 'term-out tc-cow';
-      cowEl.textContent = [
-        '╭──────────────────────────╮',
-        '│  thanks for visiting!    │',
-        '╰──────────────────────────╯',
-        '        \\   ^__^',
-        '         \\  (oo)\\_______',
-        '            (__)\\       )\\/\\',
-        '                ||----w |',
-        '                ||     ||'
+      var cowPipe = glyphRun('│', 1);
+      cowEl.innerHTML = [
+        glyphRun('╭' + rep('─', 26) + '╮', 28),
+        cowPipe + esc('  thanks for visiting!     ') + cowPipe,
+        glyphRun('╰' + rep('─', 26) + '╯', 28),
+        esc('        \\   ^__^'),
+        esc('         \\  (oo)\\_______'),
+        esc('            (__)\\       )\\/\\'),
+        esc('                ||----w |'),
+        esc('                ||     ||')
       ].join('\n');
       TERM.appendChild(cowEl);
       cowEl.scrollIntoView({ behavior: SKIP ? 'auto' : 'smooth', block: 'nearest' });
@@ -527,15 +548,39 @@
   }
 
   /* ══════════════════════════════════════════════════════════════════
-     Header shadow on scroll
+     Custom nav scroll indicator (.nav-scrollbar / .nav-scrollbar-thumb)
+     Native OS scrollbars auto-hide regardless of CSS on most platforms, so
+     this is a JS-driven stand-in: thumb width = visible/total proportion,
+     thumb left = scroll-position proportion. Hidden entirely when nothing
+     overflows — no need for a scroll affordance if every item already fits.
   ══════════════════════════════════════════════════════════════════ */
-  var header = document.getElementById('site-header');
-  if (header) {
-    window.addEventListener('scroll', function () {
-      header.style.boxShadow = window.scrollY > 4
-        ? '0 2px 16px rgba(0,0,0,0.07)'
-        : 'none';
+  function updateNavScrollbar(links) {
+    var track = links.parentElement.querySelector('.nav-scrollbar');
+    var thumb = links.parentElement.querySelector('.nav-scrollbar-thumb');
+    if (!track || !thumb) return;
+    var max = links.scrollWidth - links.clientWidth;
+    if (max <= 0) {
+      track.style.display = 'none';
+      return;
+    }
+    track.style.display = 'block';
+    var visibleFrac = links.clientWidth / links.scrollWidth;
+    var scrolledFrac = links.scrollLeft / max;
+    thumb.style.width = (visibleFrac * 100) + '%';
+    thumb.style.left  = (scrolledFrac * (100 - visibleFrac * 100)) + '%';
+  }
+
+  if (navContainer) {
+    updateNavScrollbar(navContainer);
+    navContainer.addEventListener('scroll', function () {
+      updateNavScrollbar(navContainer);
     }, { passive: true });
+    window.addEventListener('resize', function () {
+      updateNavScrollbar(navContainer);
+    });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { updateNavScrollbar(navContainer); });
+    }
   }
 
 })();

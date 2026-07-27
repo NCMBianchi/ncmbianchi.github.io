@@ -1,0 +1,41 @@
+name: Tests + coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Rust tests + coverage — tools/contrib-graph
+        run: cargo llvm-cov --manifest-path tools/contrib-graph/Cargo.toml --lcov --output-path coverage-contrib-graph.lcov
+
+      - name: Rust tests + coverage — tools/data-snapshot
+        run: cargo llvm-cov --manifest-path tools/data-snapshot/Cargo.toml --lcov --output-path coverage-data-snapshot.lcov
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: JS tests + coverage
+        run: bun run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage-contrib-graph.lcov,coverage-data-snapshot.lcov,coverage/lcov.info
+          fail_ci_if_error: false
