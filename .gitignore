@@ -4,6 +4,9 @@
 CRUSH.md
 QUESTIONS.md
 AGENTS.md
+CLAUDE.md
+.crush/
+.git/gitbutler/
 
 # ── macOS system files ─────────────────────────────────────────────────
 .DS_Store
@@ -28,13 +31,20 @@ node_modules/
 npm-debug.log*
 yarn-error.log
 
-# ── Temporary / generated files that appear during local testing ───────
+# ── Temporary testing files ────────────────────────────────────────────
 *.log
 *.tmp
 *.bak
 dist/
 build/
 
-# ── Large personal assets (add individually to git if needed) ─────────
-# assets/photo.jpg
-# assets/cv.pdf
+# ── Rust build output (tools/contrib-graph, tools/data-snapshot) ───────
+target/
+
+# ── Test coverage output (bun test --coverage, cargo llvm-cov) ─────────
+coverage/
+*.lcov
+
+# ── Deploy-time fallback snapshots (tools/data-snapshot) ───────────────
+public/data/
+

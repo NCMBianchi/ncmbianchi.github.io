@@ -1,0 +1,8 @@
+{
+  "name": "ncmbianchi.github.io",
+  "private": true,
+  "scripts": {
+    "test": "bun test tests/js",
+    "test:coverage": "bun test tests/js --coverage --coverage-reporter=lcov --coverage-dir=coverage"
+  }
+}
