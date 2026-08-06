@@ -28,12 +28,17 @@
 │   ├── presentations.html        dynamic — ORCID Public API (js/presentations.js)
 │   ├── repos.html                dynamic — GitHub REST + GraphQL APIs (js/repos.js,
 │   │                             js/contrib-graph.js)
-│   ├── skills.html               fixed content — icon grid (simple-icons/Iconify)
+│   ├── skills.html               icon grid (simple-icons/Iconify) + a dynamic language
+│   │                             breakdown bar fetched from assets/languages.json
+│   │                             (js/skills-languages.js)
 │   ├── interests.html            fixed content — tag list + cover images
 │   ├── css/, js/                 styles, browser-side scripts
-│   └── assets/, data/            images; data/ is gitignored deploy-time fallback snapshots
+│   └── assets/, data/            images + generated JSON (contributions.json,
+│                                 languages.json); data/ is gitignored deploy-time
+│                                 fallback snapshots
 ├── tools/                     Rust binaries — data pipeline, not shipped to the browser
-│   ├── contrib-graph/            fetches the GitHub contribution calendar (GraphQL)
+│   ├── contrib-graph/            fetches contribution activity and language breakdowns
+│   │                             from GitHub (GraphQL), plus optional Gitea/GitLab
 │   └── data-snapshot/            mirrors the client JS fetches, writes fallback JSON
 ├── tests/js/                  bun test suites for the pure logic in public/js/*.js
 ├── .github/workflows/         deploy, weekly contribution-graph refresh, tests + coverage
