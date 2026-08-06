@@ -48,7 +48,7 @@
 
 ---
 
-<sub>Visual inspiration by the [Charm](https://charm.sh) stack, [cowsay](https://github.com/tnalpgge/rank-amateur-cowsay) by Tony Monroe, and the YabataDesign [Afterglow theme](https://yabatadesign.github.io/afterglow-theme/):</sub>
+<sub>Visual inspiration by the [Charm](https://charm.sh) stack, [cowsay](https://github.com/tnalpgge/rank-amateur-cowsay) by Tony Monroe, and the [Afterglow theme](https://yabatadesign.github.io/afterglow-theme/) by YabataDesign:</sub>
 
 <a href="https://github.com/charmbracelet/lipgloss"><img src="https://wsrv.nl/?url=https://github.com/user-attachments/assets/d13bbe1a-d2b2-4d18-9302-419a0bc3f579&trim=10&output=png" height="100"></a>
 <a href="https://github.com/charmbracelet/gum"><img src="https://repository-images.githubusercontent.com/502193049/988f298e-d3fa-4337-9e46-0c54df302946" height="100"></a>
