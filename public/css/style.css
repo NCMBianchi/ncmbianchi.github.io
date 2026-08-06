@@ -811,12 +811,16 @@ a.tag:hover {
 
 /* Per-language tags — text + tinted background, both from the language's own
    accent token. Everything else (topics) stays the plain default .tag. */
-.tag--python { background: rgba(126, 142, 80, 0.15);  color: var(--color-accent-3); }
-.tag--r      { background: rgba(108, 153, 187, 0.15); color: var(--color-accent-2); }
-.tag--js     { background: rgba(229, 181, 103, 0.15); color: var(--color-accent-4); }
-.tag--rust   { background: rgba(172, 65, 66, 0.15);   color: var(--color-accent-5); }
-.tag--shell  { background: rgba(255, 136, 0, 0.15);   color: var(--color-accent-7); }
-.tag--go     { background: rgba(125, 214, 207, 0.15); color: var(--color-accent-6); }
+.tag--python     { background: rgba(126, 142, 80, 0.15);  color: var(--color-accent-3); }
+.tag--r          { background: rgba(108, 153, 187, 0.15); color: var(--color-accent-2); }
+.tag--js         { background: rgba(229, 181, 103, 0.15); color: var(--color-accent-4); }
+.tag--rust       { background: rgba(172, 65, 66, 0.15);   color: var(--color-accent-5); }
+.tag--shell      { background: rgba(255, 136, 0, 0.15);   color: var(--color-accent-7); }
+.tag--go         { background: rgba(125, 214, 207, 0.15); color: var(--color-accent-6); }
+.tag--nextflow   { background: rgba(125, 214, 207, 0.15); color: var(--color-accent-6); }
+.tag--groovy     { background: rgba(108, 153, 187, 0.15); color: var(--color-accent-2); }
+.tag--dockerfile { background: rgba(108, 153, 187, 0.15); color: var(--color-accent-2); }
+.tag--nix        { background: rgba(108, 153, 187, 0.15); color: var(--color-accent-2); }
 
 /* Skills icon grid — icons are simple-icons/grommet-icon/iconify images
    pre-coloured to --color-text-muted via each service's own colour param

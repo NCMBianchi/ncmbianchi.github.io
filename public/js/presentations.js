@@ -77,19 +77,9 @@
     });
   }
 
-  /* CommonJS export purely for `bun test` to require() the pure helpers
-     above without a DOM — never runs in the browser (module is undefined
-     there). Must sit before any document.* access below. */
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { esc: esc, doiInfo: doiInfo, renderCard: renderCard };
-  }
-
-  if (typeof document === 'undefined') return;
-
-  var list   = document.getElementById('pres-list');
-  var status = document.getElementById('pres-status');
-  if (!list) return;
-
+  /* Moved above the document guard below purely so it's reachable for
+     fetch-mocked tests — no DOM access of its own, so this isn't a
+     behaviour change. */
   function liveFetch() {
     return fetchJSON(WORKS_URL).then(function (data) {
       var summaries = (data.group || [])
@@ -108,6 +98,21 @@
       }));
     });
   }
+
+  /* CommonJS export purely for `bun test` to require() the pure helpers and
+     fetch-orchestration function above without a DOM — never runs in the
+     browser (module is undefined there). fetch is a real Bun/browser global
+     either way, so this is testable by mocking it, no DOM needed. Must sit
+     before any document.* access below. */
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { esc: esc, doiInfo: doiInfo, renderCard: renderCard, liveFetch: liveFetch };
+  }
+
+  if (typeof document === 'undefined') return;
+
+  var list   = document.getElementById('pres-list');
+  var status = document.getElementById('pres-status');
+  if (!list) return;
 
   window.DataCache.load({
     cacheKey: 'pres-cache-v1',

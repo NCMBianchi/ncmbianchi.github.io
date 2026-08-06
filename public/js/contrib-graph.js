@@ -23,11 +23,45 @@
     return months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
   }
 
+  /* how many whole 7-day columns fit `availableWidth`, capped by how many
+     whole weeks `totalDays` actually has — split out of render() so the
+     responsive-sizing math is testable without a DOM. */
+  function computeColumns(availableWidth, totalDays) {
+    var desiredColumns = Math.max(1, Math.floor(availableWidth / COL_PX));
+    var maxColumns = Math.floor(totalDays / 7);
+    return Math.max(1, Math.min(desiredColumns, maxColumns));
+  }
+
+  /* builds the grid's actual markup + month labels from the most recent
+     `columns * 7` days — also split out of render() for the same reason;
+     the only thing render() itself still does is measure the container's
+     width, call this, and write the result into the DOM. */
+  function buildGrid(allDays, columns) {
+    var recentDays = allDays.slice(-(columns * 7));
+    var cols = [];
+    for (var c = 0; c < columns; c++) cols.push(recentDays.slice(c * 7, c * 7 + 7));
+
+    var cellsHtml = cols.map(function (col) {
+      return col.map(function (day) {
+        var level = levelFor(day.count);
+        var label = day.count + (day.count === 1 ? ' contribution on ' : ' contributions on ') + day.date;
+        return '<span class="contrib-cell" data-level="' + level + '" title="' + label + '"></span>';
+      }).join('');
+    }).join('');
+
+    return {
+      cellsHtml: cellsHtml,
+      leftLabel: monthYear(cols[0][0].date),
+      centerLabel: monthYear(cols[Math.floor(cols.length / 2)][0].date),
+      rightLabel: monthYear(cols[cols.length - 1][0].date)
+    };
+  }
+
   /* CommonJS export purely for `bun test` to require() the pure helpers
      above without a DOM — never runs in the browser (module is undefined
      there). Must sit before any document.* access below. */
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { levelFor: levelFor, monthYear: monthYear };
+    module.exports = { levelFor: levelFor, monthYear: monthYear, computeColumns: computeColumns, buildGrid: buildGrid };
   }
 
   if (typeof document === 'undefined') return;
@@ -41,25 +75,10 @@
     if (!allDays) return;
 
     var availableWidth = container.clientWidth || (container.parentElement && container.parentElement.clientWidth) || 0;
-    var desiredColumns = Math.max(1, Math.floor(availableWidth / COL_PX));
-    var maxColumns = Math.floor(allDays.length / 7);
-    var columns = Math.max(1, Math.min(desiredColumns, maxColumns));
-
-    var recentDays = allDays.slice(-(columns * 7));
-    var cols = [];
-    for (var c = 0; c < columns; c++) cols.push(recentDays.slice(c * 7, c * 7 + 7));
-
-    var cells = cols.map(function (col) {
-      return col.map(function (day) {
-        var level = levelFor(day.count);
-        var label = day.count + (day.count === 1 ? ' contribution on ' : ' contributions on ') + day.date;
-        return '<span class="contrib-cell" data-level="' + level + '" title="' + label + '"></span>';
-      }).join('');
-    }).join('');
-
-    var leftLabel   = monthYear(cols[0][0].date);
-    var centerLabel = monthYear(cols[Math.floor(cols.length / 2)][0].date);
-    var rightLabel  = monthYear(cols[cols.length - 1][0].date);
+    var columns = computeColumns(availableWidth, allDays.length);
+    var grid = buildGrid(allDays, columns);
+    var cells = grid.cellsHtml;
+    var leftLabel = grid.leftLabel, centerLabel = grid.centerLabel, rightLabel = grid.rightLabel;
 
     container.innerHTML =
       '<div class="contrib-graph-wrap">' +

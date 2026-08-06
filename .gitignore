@@ -1,7 +1,6 @@
 # Gitignore — ncmbianchi.github.io
 
 # ── Agent / AI assistant notes (not for version control) ──────────────
-CRUSH.md
 QUESTIONS.md
 AGENTS.md
 CLAUDE.md
@@ -37,6 +36,7 @@ yarn-error.log
 *.bak
 dist/
 build/
+deployment_logs/
 
 # ── Rust build output (tools/contrib-graph, tools/data-snapshot) ───────
 target/
