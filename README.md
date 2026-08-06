@@ -1,14 +1,16 @@
 # ncmbianchi.github.io
 
 <!-- Badges -->
-[![Deploy](https://img.shields.io/github/actions/workflow/status/NCMBianchi/ncmbianchi.github.io/deploy.yml?label=deploy)](https://github.com/NCMBianchi/ncmbianchi.github.io/actions)
-[![Tests](https://img.shields.io/github/actions/workflow/status/NCMBianchi/ncmbianchi.github.io/test.yml?label=tests)](https://github.com/NCMBianchi/ncmbianchi.github.io/actions)
 [![HTML5](https://img.shields.io/badge/uses-HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
 [![CSS3](https://img.shields.io/badge/uses-CSS3-1572B6?logo=css&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
 [![JavaScript](https://img.shields.io/badge/uses-JavaScript-F7DF1E?logo=javascript&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![Rust](https://img.shields.io/badge/uses-Rust-black?logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![Bun](https://img.shields.io/badge/tested%20with-Bun-FFFDD0?logo=bun&logoColor=white)](https://bun.sh)
+
+[![Deploy](https://img.shields.io/github/actions/workflow/status/NCMBianchi/ncmbianchi.github.io/deploy.yml?label=deploy)](https://github.com/NCMBianchi/ncmbianchi.github.io/actions)
+[![Tests](https://img.shields.io/github/actions/workflow/status/NCMBianchi/ncmbianchi.github.io/test.yml?label=tests)](https://github.com/NCMBianchi/ncmbianchi.github.io/actions)
 [![codecov](https://img.shields.io/codecov/c/github/NCMBianchi/ncmbianchi.github.io?logo=codecov&label=codecov)](https://codecov.io/gh/NCMBianchi/ncmbianchi.github.io)
+[![License](https://img.shields.io/github/license/NCMBianchi/ncmbianchi.github.io)](LICENSE)
 
 ---
 
@@ -26,24 +28,23 @@
 │   ├── presentations.html        dynamic — ORCID Public API (js/presentations.js)
 │   ├── repos.html                dynamic — GitHub REST + GraphQL APIs (js/repos.js,
 │   │                             js/contrib-graph.js)
-│   ├── skills.html               fixed content — icon grid (simple-icons/Iconify)
+│   ├── skills.html               icon grid (simple-icons/Iconify) + a dynamic language
+│   │                             breakdown bar fetched from assets/languages.json
+│   │                             (js/skills-languages.js)
 │   ├── interests.html            fixed content — tag list + cover images
 │   ├── css/, js/                 styles, browser-side scripts
-│   └── assets/, data/            images; data/ is gitignored deploy-time fallback snapshots
+│   └── assets/, data/            images + generated JSON (contributions.json,
+│                                 languages.json); data/ is gitignored deploy-time
+│                                 fallback snapshots
 ├── tools/                     Rust binaries — data pipeline, not shipped to the browser
-│   ├── contrib-graph/            fetches the GitHub contribution calendar (GraphQL)
+│   ├── contrib-graph/            fetches contribution activity and language breakdowns
+│   │                             from GitHub (GraphQL), plus optional Gitea/GitLab
 │   └── data-snapshot/            mirrors the client JS fetches, writes fallback JSON
 ├── tests/js/                  bun test suites for the pure logic in public/js/*.js
-├── .github/workflows/         deploy, daily contribution-graph refresh, tests + coverage
+├── .github/workflows/         deploy, weekly contribution-graph refresh, tests + coverage
 ├── LICENSE
 └── README.md
 ```
-
----
-
-## License
-
-[MIT](LICENSE) © 2026 Niccolò Bianchi
 
 ---
 

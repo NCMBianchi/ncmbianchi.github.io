@@ -12,6 +12,7 @@
   var LIMIT      = 6;
   var MAX_TOPICS = 4;
   var MAX_COMMIT_MSG = 60;
+  var LANG_THRESHOLD = 10; /* show every language over this % of a repo's bytes, not just the single GitHub-reported "primary" one */
 
   /* not real projects to show in the grid: the profile README repo, and
      this portfolio site's own repo (its own contributions still show up in
@@ -27,7 +28,11 @@
     'javascript': 'tag--js',
     'rust':       'tag--rust',
     'shell':      'tag--shell',
-    'go':         'tag--go'
+    'go':         'tag--go',
+    'nextflow':   'tag--nextflow',
+    'groovy':     'tag--groovy',
+    'dockerfile': 'tag--dockerfile',
+    'nix':        'tag--nix'
   };
 
   function esc(str) {
@@ -50,9 +55,30 @@
     return '<span class="tag' + (cls ? ' ' + cls : '') + '">' + esc(language) + '</span>';
   }
 
+  /* GitHub's /languages endpoint returns {name: bytes, ...} for a repo —
+     converts that into the languages actually worth showing as tags: every
+     one over `thresholdPercent` of the repo's total bytes, highest first.
+     Pure (no fetch), so it's testable directly against a plain object. */
+  function computeLanguagePercentages(bytesByLang, thresholdPercent) {
+    var names = Object.keys(bytesByLang || {});
+    var total = names.reduce(function (sum, name) { return sum + bytesByLang[name]; }, 0);
+    if (!total) return [];
+    return names
+      .map(function (name) { return { name: name, percent: (bytesByLang[name] / total) * 100 }; })
+      .filter(function (l) { return l.percent > thresholdPercent; })
+      .sort(function (a, b) { return b.percent - a.percent; });
+  }
+
   function renderCard(repo) {
     var tags = [];
-    if (repo.language) tags.push(langTag(repo.language));
+    if (repo.languages && repo.languages.length) {
+      /* real per-repo byte breakdown, fetched separately (attachLanguageBreakdown) */
+      repo.languages.forEach(function (l) { tags.push(langTag(l.name)); });
+    } else if (repo.language) {
+      /* fallback: breakdown fetch failed, or this came from an older cached/
+         snapshot shape from before this feature existed */
+      tags.push(langTag(repo.language));
+    }
     (repo.topics || []).slice(0, MAX_TOPICS).forEach(function (t) {
       tags.push('<span class="tag">' + esc(t) + '</span>');
     });
@@ -111,24 +137,28 @@
     }).catch(function () { return repo; });
   }
 
+  /* one more extra request per shown card, same cost pattern/reasoning as
+     attachLatestCommit above. repo.language (GitHub's own single "primary
+     language" field) can only ever show one language, and can lag behind
+     reality right after a push/fork — this fetches the real byte breakdown
+     instead and keeps everything over LANG_THRESHOLD%, not just the one
+     GitHub happens to rank first. */
+  function attachLanguageBreakdown(repo) {
+    var url = 'https://api.github.com/repos/' + OWNER + '/' + repo.name + '/languages';
+    return fetchJSON(url).then(function (bytesByLang) {
+      repo.languages = computeLanguagePercentages(bytesByLang, LANG_THRESHOLD);
+      return repo;
+    }).catch(function () { return repo; });
+  }
+
   function enrichRepo(repo) {
-    return Promise.all([attachLatestCommit(repo), attachForkParentStars(repo)])
+    return Promise.all([attachLatestCommit(repo), attachForkParentStars(repo), attachLanguageBreakdown(repo)])
       .then(function () { return repo; });
   }
 
-  /* CommonJS export purely for `bun test` to require() the pure helpers
-     above without a DOM — never runs in the browser (module is undefined
-     there). Must sit before any document.* access below. */
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { esc: esc, timeAgo: timeAgo, langTag: langTag, renderCard: renderCard, SKIP_REPOS: SKIP_REPOS };
-  }
-
-  if (typeof document === 'undefined') return;
-
-  var list   = document.getElementById('repo-list');
-  var status = document.getElementById('repo-status');
-  if (!list) return;
-
+  /* Moved above the document guard below purely so it's reachable for
+     fetch-mocked tests — it only ever calls fetchJSON()/enrichRepo(), no
+     DOM access of its own, so this isn't a behaviour change. */
   function liveFetch() {
     return fetchJSON(REPOS_URL).then(function (repos) {
       var filtered = repos
@@ -141,6 +171,27 @@
       return Promise.all(filtered.map(enrichRepo));
     });
   }
+
+  /* CommonJS export purely for `bun test` to require() the pure helpers
+     and fetch-orchestration functions above without a DOM — never runs in
+     the browser (module is undefined there). fetch is a real Bun/browser
+     global either way, so these are testable by mocking it, no DOM needed.
+     Must sit before any document.* access below. */
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      esc: esc, timeAgo: timeAgo, langTag: langTag, renderCard: renderCard,
+      SKIP_REPOS: SKIP_REPOS, computeLanguagePercentages: computeLanguagePercentages,
+      attachLatestCommit: attachLatestCommit, attachForkParentStars: attachForkParentStars,
+      attachLanguageBreakdown: attachLanguageBreakdown, enrichRepo: enrichRepo,
+      liveFetch: liveFetch
+    };
+  }
+
+  if (typeof document === 'undefined') return;
+
+  var list   = document.getElementById('repo-list');
+  var status = document.getElementById('repo-status');
+  if (!list) return;
 
   window.DataCache.load({
     cacheKey: 'repos-cache-v1',

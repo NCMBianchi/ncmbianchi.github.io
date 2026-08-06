@@ -2,7 +2,7 @@ name: Update contribution graph data
 
 on:
   schedule:
-    - cron: '17 3 * * *'   # daily at 03:17 UTC
+    - cron: '17 3 * * 0'   # weekly, Sunday 03:17 UTC, trigger deploy.yml
   workflow_dispatch:        # allow manual trigger from the Actions tab
 
 permissions:
@@ -19,10 +19,22 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        continue-on-error: true
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
       - name: Fetch contribution calendar
         env:
           CONTRIB_TOKEN: ${{ secrets.CONTRIB_TOKEN }}
           GITHUB_LOGIN: NCMBianchi
+          GITEA_URL: ${{ secrets.GITEA_URL }}
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITLAB_URL: ${{ secrets.GITLAB_URL }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: cargo run --release --manifest-path tools/contrib-graph/Cargo.toml
 
       - name: Commit if changed

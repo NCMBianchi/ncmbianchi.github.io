@@ -106,19 +106,9 @@
     }));
   }
 
-  /* CommonJS export purely for `bun test` to require() the pure helpers
-     above without a DOM — never runs in the browser (module is undefined
-     there). Must sit before any document.* access below. */
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { esc: esc, doiInfo: doiInfo, authorsOf: authorsOf, renderCard: renderCard };
-  }
-
-  if (typeof document === 'undefined') return;
-
-  var list   = document.getElementById('pub-list');
-  var status = document.getElementById('pub-status');
-  if (!list) return;
-
+  /* Moved above the document guard below purely so it's reachable for
+     fetch-mocked tests — no DOM access of its own, just fetchJSON()/
+     attachCitations(), so this isn't a behaviour change. */
   function liveFetch() {
     return fetchJSON(WORKS_URL).then(function (data) {
       var summaries = (data.group || [])
@@ -137,6 +127,24 @@
       })).then(attachCitations);
     });
   }
+
+  /* CommonJS export purely for `bun test` to require() the pure helpers and
+     fetch-orchestration functions above without a DOM — never runs in the
+     browser (module is undefined there). fetch is a real Bun/browser global
+     either way, so these are testable by mocking it, no DOM needed. Must
+     sit before any document.* access below. */
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      esc: esc, doiInfo: doiInfo, authorsOf: authorsOf, renderCard: renderCard,
+      attachCitations: attachCitations, liveFetch: liveFetch
+    };
+  }
+
+  if (typeof document === 'undefined') return;
+
+  var list   = document.getElementById('pub-list');
+  var status = document.getElementById('pub-status');
+  if (!list) return;
 
   window.DataCache.load({
     cacheKey: 'pub-cache-v4', /* v4: back to a bare works array, citations moved onto each work (_citations) */
