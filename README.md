@@ -5,7 +5,7 @@
 [![CSS3](https://img.shields.io/badge/uses-CSS3-1572B6?logo=css&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
 [![JavaScript](https://img.shields.io/badge/uses-JavaScript-F7DF1E?logo=javascript&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![Rust](https://img.shields.io/badge/uses-Rust-black?logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![Bun](https://img.shields.io/badge/tested%20with-Bun-FFFDD0?logo=bun&logoColor=white)](https://bun.sh)
+[![Bun](https://img.shields.io/badge/tested%20via-Bun-FFFDD0?logo=bun&logoColor=white)](https://bun.sh)
 
 [![Deploy](https://img.shields.io/github/actions/workflow/status/NCMBianchi/ncmbianchi.github.io/deploy.yml?label=deploy)](https://github.com/NCMBianchi/ncmbianchi.github.io/actions)
 [![Tests](https://img.shields.io/github/actions/workflow/status/NCMBianchi/ncmbianchi.github.io/test.yml?label=tests)](https://github.com/NCMBianchi/ncmbianchi.github.io/actions)
