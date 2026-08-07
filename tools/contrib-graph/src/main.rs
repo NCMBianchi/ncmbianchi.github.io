@@ -481,7 +481,7 @@ fn fetch_gitlab_repo_languages(
     let mut repos = Vec::new();
     let mut page = 1;
     loop {
-        let list_url = format!("{base_url}/api/v4/projects?owned=true&statistics=true&per_page=100&page={page}");
+        let list_url = format!("{base_url}/api/v4/projects?membership=true&statistics=true&per_page=100&page={page}");
         let page_projects: Vec<serde_json::Value> = client
             .get(&list_url)
             .header("PRIVATE-TOKEN", token)
