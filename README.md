@@ -33,14 +33,16 @@
 │   ├── interests.html            fixed content — tag list + cover images
 │   ├── css/, js/                 styles, browser-side scripts
 │   └── assets/, data/            images + generated JSON (contributions.json,
-│                                 languages.json); data/ is gitignored deploy-time
+│                                 languages.json) + assets/icons/ (cached skill icons,
+│                                 see tools/icon-cache); data/ is gitignored deploy-time
 │                                 fallback snapshots
 ├── tools/                     Rust binaries — data pipeline, not shipped to the browser
 │   ├── contrib-graph/            fetches contribution activity and language breakdowns
 │   │                             from GitHub (GraphQL), plus optional Gitea/GitLab
-│   └── data-snapshot/            mirrors the client JS fetches, writes fallback JSON
+│   ├── data-snapshot/            mirrors the client JS fetches, writes fallback JSON
+│   └── icon-cache/               fetches+caches skills.html icon SVGs once, skip-if-exists
 ├── tests/js/                  bun test suites for the pure logic in public/js/*.js
-├── .github/workflows/         deploy, weekly contribution-graph refresh, tests + coverage
+├── .github/workflows/         deploy, data refresh (contributions, icons), tests + coverage
 ├── LICENSE
 └── README.md
 ```
