@@ -1,5 +1,5 @@
 const { test, expect, describe } = require('bun:test');
-const { esc, fmtPercent } = require('../../public/js/skills-languages.js');
+const { esc, fmtPercent, langIconSrc } = require('../../public/js/skills-languages.js');
 
 describe('esc', () => {
   test('escapes html-sensitive characters', () => {
@@ -16,5 +16,15 @@ describe('fmtPercent', () => {
   test('rounds to one decimal place otherwise', () => {
     expect(fmtPercent(12.345)).toBe('12.3');
     expect(fmtPercent(0.049)).toBe('0');
+  });
+});
+
+describe('langIconSrc', () => {
+  test('swaps a cached -color.svg path for its -lang.svg sibling', () => {
+    expect(langIconSrc('assets/icons/pandas-color.svg')).toBe('assets/icons/pandas-lang.svg');
+  });
+
+  test('leaves a src unchanged if it does not end in -color.svg', () => {
+    expect(langIconSrc('assets/icons/pandas-grey.svg')).toBe('assets/icons/pandas-grey.svg');
   });
 });

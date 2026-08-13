@@ -27,6 +27,9 @@ jobs:
       - name: Rust tests + coverage — tools/data-snapshot
         run: cargo llvm-cov --manifest-path tools/data-snapshot/Cargo.toml --lcov --output-path coverage-data-snapshot.lcov
 
+      - name: Rust tests + coverage — tools/icon-cache
+        run: cargo llvm-cov --manifest-path tools/icon-cache/Cargo.toml --lcov --output-path coverage-icon-cache.lcov
+
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
 
@@ -37,5 +40,5 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage-contrib-graph.lcov,coverage-data-snapshot.lcov,coverage/lcov.info
+          files: coverage-contrib-graph.lcov,coverage-data-snapshot.lcov,coverage-icon-cache.lcov,coverage/lcov.info
           fail_ci_if_error: false
