@@ -43,15 +43,18 @@
     attachHoverHandlers(root);
   }
 
-  function recolor(img, hex) {
+  /* Every tile's colour icon is pre-cached at build time (tools/icon-cache)
+     as <basename>-color.svg (fixed per-tool hover colour) and, for
+     data-lang-tagged tiles, <basename>-lang.svg (that language's own bar
+     colour) sitting right next to it — so recolouring on language-bar
+     hover is just a local path swap, never a live fetch of a new hex. */
+  function langIconSrc(origSrc) {
+    return origSrc.replace(/-color\.svg$/, '-lang.svg');
+  }
+
+  function recolor(img) {
     if (!img.dataset.origSrc) img.dataset.origSrc = img.src;
-    var hexBare = hex.replace('#', '');
-    var src = img.dataset.origSrc;
-    if (src.indexOf('cdn.simpleicons.org') !== -1) {
-      img.src = src.replace(/\/[0-9a-fA-F]{3,6}$/, '/' + hexBare);
-    } else if (src.indexOf('api.iconify.design') !== -1) {
-      img.src = src.replace(/color=%23[0-9a-fA-F]{3,6}/, 'color=%23' + hexBare);
-    }
+    img.src = langIconSrc(img.dataset.origSrc);
   }
 
   function restore(img) {
@@ -63,7 +66,7 @@
       tile.classList.toggle('lang-active', on);
       var colorImg = tile.querySelector('.skill-icon--color');
       var placeholder = tile.querySelector('.skill-icon-placeholder');
-      if (colorImg) { on ? recolor(colorImg, hex) : restore(colorImg); }
+      if (colorImg) { on ? recolor(colorImg) : restore(colorImg); }
       if (placeholder) {
         placeholder.style.borderColor = on ? hex : '';
         placeholder.style.color = on ? hex : '';
@@ -84,7 +87,7 @@
      above without a DOM — never runs in the browser (module is undefined
      there). Must sit before any document.* access below. */
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { esc: esc, fmtPercent: fmtPercent };
+    module.exports = { esc: esc, fmtPercent: fmtPercent, langIconSrc: langIconSrc };
   }
 
   if (typeof document === 'undefined') return;

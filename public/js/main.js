@@ -460,7 +460,7 @@
 
       for (var i = 0; i < SECTIONS.length; i++) {
         tuiEl.innerHTML = buildTUI(i, done);        /* cursor on i   */
-        await wait(SKIP ? 0 : 950);                 /* ~1 s pause    */
+        await wait(SKIP ? 0 : 700);                 /* ~0.7 s pause  */
 
         /* Swap in the real, live-fetched item list for this section (see
            js/home-preview.js) if one arrived in time, replacing the
@@ -487,7 +487,7 @@
         renderOutputEl(outEl);                      /* truncate to fit render */
         outEl.scrollIntoView({ behavior: SKIP ? 'auto' : 'smooth', block: 'nearest' });
 
-        await wait(SKIP ? 0 : 450);
+        await wait(SKIP ? 0 : 300);
       }
 
       /* 7 — final state: all done, hover enabled */

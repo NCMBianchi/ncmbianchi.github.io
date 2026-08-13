@@ -1,0 +1,15 @@
+[package]
+name = "icon-cache"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "icon-cache"
+path = "src/main.rs"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["blocking"] }
+
+[dev-dependencies]
+httpmock = "0.7"

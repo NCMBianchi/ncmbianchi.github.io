@@ -32,12 +32,23 @@
 //!
 //! Also writes `public/assets/languages.json` — an aggregate language
 //! breakdown across every owned repo on all three sources (GitHub, Gitea,
-//! GitLab; forks excluded), for skills.html's language bar. Only
-//! languages over LANG_THRESHOLD% of a given repo's own bytes are kept
-//! (per repo, same as repos.js/data-snapshot's per-card tags), then summed
-//! across every repo before computing the final aggregate percentages —
-//! so a language can legitimately show under LANG_THRESHOLD% here even
-//! though it cleared it in at least one contributing repo.
+//! GitLab; forks excluded), for skills.html's language bar.
+//! `LANG_BLACKLIST` languages (Jupyter Notebook, Markdown, HTML) are
+//! stripped from a repo's bytes before any percentage math — never
+//! counted, not even folded into Other. Of what's left, only languages
+//! over LANG_THRESHOLD% of a given repo's own (post-blacklist) bytes are
+//! kept (per repo, same as repos.js/data-snapshot's per-card tags), then
+//! filtered again to `LANG_WHITELIST` — a curated list of languages
+//! allowed their own slice — before the final aggregate percentages are
+//! computed. Aggregation is **repo-weighted, not byte-weighted**: each
+//! repo's survivors are normalised to that repo's own 100% first, then
+//! those per-repo shares are *averaged* across every countable repo (one
+//! repo = one vote, regardless of its size) — deliberately not summing
+//! raw bytes across repos and dividing once, which let one large/verbose
+//! repo dominate the aggregate over many smaller repos using a different
+//! language. Anything not on the whitelist folds into "Other" instead. A
+//! language can legitimately show under LANG_THRESHOLD% here even though
+//! it cleared it in at least one contributing repo.
 
 use chrono::{DateTime, Duration, Utc};
 use serde::Serialize;
@@ -56,12 +67,33 @@ const YEARS_OF_HISTORY: i64 = 2;
 /// second cutoff applied to the aggregate itself.
 const LANG_THRESHOLD: f64 = 10.0;
 
-/// Same Afterglow tokens already assigned to each language's `.tag--*`
-/// class in style.css/repos.js — reused here rather than re-picked, so a
-/// language's colour means the same thing on repos.html and skills.html.
-/// HTML/CSS have no existing `.tag--*` (no repo has shown them over
-/// threshold yet) — picked the same accent tokens their own skill-icon
-/// hover colours already use, for the same reason.
+/// Never counted at all for the skills.html aggregate bar — stripped from
+/// a repo's raw {language: bytes} map before any percentage math runs, so
+/// their bytes don't inflate or dilute anyone else's share either (not
+/// folded into Other, genuinely excluded from the denominator). These are
+/// linguist-detected "languages" that don't reflect authored coding skill
+/// the way the rest of this list does: Jupyter Notebook is a JSON wrapper
+/// around mostly-Python content (already counted as Python bytes
+/// separately), Markdown/HTML are prose/doc formatting, not source.
+const LANG_BLACKLIST: &[&str] = &["Jupyter Notebook", "Markdown", "HTML"];
+
+/// The only languages eligible to get their own named slice on the
+/// skills.html aggregate bar — a deliberate curated list, owner's taste
+/// call, not "every detected language that clears LANG_THRESHOLD somewhere"
+/// (the previous behaviour let CI/infra boilerplate like a lone Dockerfile
+/// show up at the same visual tier as Python/Rust). Anything not on this
+/// list still counts toward the denominator (unlike LANG_BLACKLIST above)
+/// but folds into "Other" rather than getting its own slice — applied once,
+/// centrally, in `aggregate_languages`, not per repo.
+const LANG_WHITELIST: &[&str] =
+    &["Python", "R", "Rust", "Go", "JavaScript", "Nextflow", "Snakemake", "Dockerfile", "YAML", "Shell", "CSS"];
+
+/// Real GitHub-linguist colours (github-linguist/linguist languages.yml),
+/// mapped to the closest Afterglow token — same standard as every other
+/// colour choice in this project (verify the real value, don't guess).
+/// Only whitelisted languages need an entry here; anything else falls
+/// through `color_for`'s OTHER_COLOR default since it never reaches this
+/// map (filtered to Other before colour lookup — see `aggregate_languages`).
 const LANG_COLORS: &[(&str, &str)] = &[
     ("Python", "#7e8e50"),
     ("R", "#6c99bb"),
@@ -70,10 +102,8 @@ const LANG_COLORS: &[(&str, &str)] = &[
     ("Shell", "#ff8800"),
     ("Go", "#7dd6cf"),
     ("Nextflow", "#7dd6cf"),
-    ("Groovy", "#6c99bb"),
     ("Dockerfile", "#6c99bb"),
-    ("Nix", "#6c99bb"),
-    ("HTML", "#ff8800"),
+    ("YAML", "#ac4142"),
     ("CSS", "#9f4e85"),
 ];
 const OTHER_COLOR: &str = "#4d4d4d";
@@ -90,38 +120,55 @@ struct LangSlice {
 /// byte counts (not re-percentaged) alongside the repo's true total byte
 /// count — callers sum both across many repos before computing final
 /// percentages, so the true total (not just survivors) has to travel
-/// along too.
+/// along too. `LANG_BLACKLIST` entries are dropped from the map before the
+/// total is even computed, so a notebook-heavy repo doesn't have its real
+/// languages diluted by bytes that were never going to be shown anyway —
+/// the total this function returns is the *countable* total, not the raw
+/// repo total.
 fn repo_languages_over_threshold(bytes_by_lang: &BTreeMap<String, f64>, threshold_percent: f64) -> (Vec<(String, f64)>, f64) {
-    let total: f64 = bytes_by_lang.values().sum();
+    let counted: BTreeMap<&String, &f64> =
+        bytes_by_lang.iter().filter(|(name, _)| !LANG_BLACKLIST.contains(&name.as_str())).collect();
+    let total: f64 = counted.values().copied().sum();
     if total == 0.0 {
         return (Vec::new(), 0.0);
     }
-    let survivors = bytes_by_lang
+    let survivors = counted
         .iter()
-        .filter(|(_, &bytes)| (bytes / total) * 100.0 > threshold_percent)
-        .map(|(name, &bytes)| (name.clone(), bytes))
+        .filter(|(_, &&bytes)| (bytes / total) * 100.0 > threshold_percent)
+        .map(|(name, &&bytes)| ((*name).clone(), bytes))
         .collect();
     (survivors, total)
 }
 
-/// Sums each repo's already-filtered survivor bytes per language, and each
-/// repo's true total (not just survivors), across every repo from every
-/// source — then converts to final percentages of that grand total, so a
-/// language can end up under `LANG_THRESHOLD`% here even though every one
-/// of its contributing repos individually cleared it. Sorted descending;
-/// "Other" (whatever the per-repo filter dropped) is pinned last
-/// regardless of size, same convention GitHub's own language bar uses.
+/// **Repo-weighted**, not byte-weighted: normalises each repo's own
+/// survivor bytes to a %-of-that-repo *first* (so a 50KB repo and a 500B
+/// repo each get one equal "vote"), then averages those per-repo shares
+/// across every *countable* repo (one with `repo_total > 0`) from every
+/// source. Deliberately not byte-weighted (sum bytes globally, divide
+/// once) — that scheme let one large/verbose repo dominate the aggregate
+/// regardless of how many smaller repos used a different language, which
+/// undersold breadth of languages actually used in favour of sheer bytes
+/// written. Only `LANG_WHITELIST` names get their own slice; every other
+/// survivor name (not on the curated list) folds into "Other" here,
+/// alongside whatever the per-repo threshold already dropped — this still
+/// works under repo-weighting because averaging is linear:
+/// `avg(100 - whitelisted%) == 100 - avg(whitelisted%)`, so "Other" can
+/// still be derived as `100 - (sum of the shown slices)` rather than
+/// tracked as a separate running total. Sorted descending; "Other" is
+/// pinned last regardless of size, same convention GitHub's own language
+/// bar uses.
 fn aggregate_languages(per_repo: Vec<(Vec<(String, f64)>, f64)>) -> Vec<LangSlice> {
-    let mut totals: BTreeMap<String, f64> = BTreeMap::new();
-    let mut grand_total = 0.0;
-    for (survivors, repo_total) in per_repo {
-        grand_total += repo_total;
-        for (name, bytes) in survivors {
-            *totals.entry(name).or_insert(0.0) += bytes;
-        }
-    }
-    if grand_total == 0.0 {
+    let voting_repos: Vec<&(Vec<(String, f64)>, f64)> = per_repo.iter().filter(|(_, total)| *total > 0.0).collect();
+    let repo_count = voting_repos.len();
+    if repo_count == 0 {
         return Vec::new();
+    }
+
+    let mut summed_shares: BTreeMap<String, f64> = BTreeMap::new();
+    for (survivors, repo_total) in &voting_repos {
+        for (name, bytes) in survivors {
+            *summed_shares.entry(name.clone()).or_insert(0.0) += (bytes / repo_total) * 100.0;
+        }
     }
 
     let color_for = |name: &str| -> String {
@@ -132,14 +179,17 @@ fn aggregate_languages(per_repo: Vec<(Vec<(String, f64)>, f64)>) -> Vec<LangSlic
             .unwrap_or_else(|| OTHER_COLOR.to_string())
     };
 
-    let mut slices: Vec<LangSlice> = totals
+    let mut slices: Vec<LangSlice> = summed_shares
         .iter()
-        .map(|(name, &bytes)| LangSlice { name: name.clone(), percent: (bytes / grand_total) * 100.0, color: color_for(name) })
+        .filter(|(name, _)| LANG_WHITELIST.contains(&name.as_str()))
+        .map(|(name, &summed_share)| {
+            LangSlice { name: name.clone(), percent: summed_share / repo_count as f64, color: color_for(name) }
+        })
         .collect();
     slices.sort_by(|a, b| b.percent.partial_cmp(&a.percent).unwrap_or(std::cmp::Ordering::Equal));
 
-    let survivors_total: f64 = slices.iter().map(|s| s.percent).sum();
-    let other_percent = (100.0 - survivors_total).max(0.0);
+    let whitelisted_total: f64 = slices.iter().map(|s| s.percent).sum();
+    let other_percent = (100.0 - whitelisted_total).max(0.0);
     if other_percent > 0.01 {
         slices.push(LangSlice { name: "Other".to_string(), percent: other_percent, color: OTHER_COLOR.to_string() });
     }
@@ -796,16 +846,63 @@ mod tests {
     }
 
     #[test]
-    fn aggregate_languages_can_show_a_language_under_threshold_overall() {
-        // Python clears 10% in repo A (60%) but the grand total (dominated by
-        // repo B's Rust) pushes Python's own aggregate share under 10% —
-        // exactly the case the per-repo-then-sum design is meant to allow.
-        let repo_a = (vec![("Python".to_string(), 60.0)], 100.0);
-        let repo_b = (vec![("Rust".to_string(), 950.0)], 1000.0);
+    fn repo_languages_over_threshold_strips_blacklisted_languages_before_totalling() {
+        // 50% Jupyter Notebook, 30% Python, 15% Markdown, 5% JSON — once
+        // Notebook+Markdown are stripped, the countable total is 35 (30+5),
+        // so Python is really 30/35 = 85.7% of what's left, not 30%.
+        let mut bytes = BTreeMap::new();
+        bytes.insert("Jupyter Notebook".to_string(), 50.0);
+        bytes.insert("Python".to_string(), 30.0);
+        bytes.insert("Markdown".to_string(), 15.0);
+        bytes.insert("JSON".to_string(), 5.0);
+        let (survivors, total) = repo_languages_over_threshold(&bytes, LANG_THRESHOLD);
+        assert_eq!(total, 35.0); // countable total, not the raw 100
+        let names: Vec<&str> = survivors.iter().map(|(n, _)| n.as_str()).collect();
+        assert_eq!(names, vec!["JSON", "Python"]); // both clear 10% of 35
+    }
+
+    #[test]
+    fn repo_languages_over_threshold_empty_when_only_blacklisted_languages_present() {
+        // a pure-docs repo — after stripping, nothing left to divide by;
+        // must not panic on a division by zero.
+        let mut bytes = BTreeMap::new();
+        bytes.insert("Markdown".to_string(), 40.0);
+        bytes.insert("HTML".to_string(), 60.0);
+        let (survivors, total) = repo_languages_over_threshold(&bytes, LANG_THRESHOLD);
+        assert!(survivors.is_empty());
+        assert_eq!(total, 0.0);
+    }
+
+    #[test]
+    fn aggregate_languages_is_repo_weighted_not_byte_weighted() {
+        // repo_a is tiny (10 bytes total) but 80% Python; repo_b is huge
+        // (100,000 bytes) and 95% Rust. Byte-weighted (the old scheme)
+        // would show Python at a vanishing ~0.008% (8 / 100010) since
+        // repo_b's sheer size swamps it — repo-weighted instead normalises
+        // each repo to its own 100% first, so repo_a's 80% Python share
+        // gets equal footing with repo_b's 95% Rust share as "one repo,
+        // one vote", averaging to 40%/47.5% across the 2 repos.
+        let repo_a = (vec![("Python".to_string(), 8.0)], 10.0);
+        let repo_b = (vec![("Rust".to_string(), 95000.0)], 100000.0);
         let slices = aggregate_languages(vec![repo_a, repo_b]);
         let python = slices.iter().find(|s| s.name == "Python").unwrap();
-        assert!(python.percent < 10.0);
-        assert!(python.percent > 0.0);
+        let rust = slices.iter().find(|s| s.name == "Rust").unwrap();
+        assert!((python.percent - 40.0).abs() < 0.01);
+        assert!((rust.percent - 47.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn aggregate_languages_excludes_zero_total_repos_from_the_vote_count() {
+        // a repo with nothing countable (e.g. entirely blacklisted content,
+        // already reduced to (vec![], 0.0) by repo_languages_over_threshold)
+        // must not count as a "vote" in the repo-weighted average —
+        // otherwise it would silently drag every language's share down even
+        // though it contributed zero real signal.
+        let repo_a = (vec![("Python".to_string(), 100.0)], 100.0);
+        let repo_b = (Vec::new(), 0.0); // fully blacklisted repo
+        let slices = aggregate_languages(vec![repo_a, repo_b]);
+        let python = slices.iter().find(|s| s.name == "Python").unwrap();
+        assert_eq!(python.percent, 100.0); // not 50.0, which a 2-repo denominator would give
     }
 
     #[test]
@@ -840,6 +937,39 @@ mod tests {
     #[test]
     fn aggregate_languages_empty_input_yields_empty_output() {
         assert!(aggregate_languages(Vec::new()).is_empty());
+    }
+
+    #[test]
+    fn aggregate_languages_folds_non_whitelisted_survivors_into_other() {
+        // JSON clears the per-repo threshold (it's a real survivor, not
+        // dropped by repo_languages_over_threshold), but it isn't on
+        // LANG_WHITELIST — it should still show up, just folded into Other
+        // rather than getting its own named/coloured slice.
+        let repo = (vec![("Python".to_string(), 70.0), ("JSON".to_string(), 30.0)], 100.0);
+        let slices = aggregate_languages(vec![repo]);
+        assert!(slices.iter().all(|s| s.name != "JSON"));
+        let python = slices.iter().find(|s| s.name == "Python").unwrap();
+        assert_eq!(python.percent, 70.0);
+        let other = slices.iter().find(|s| s.name == "Other").unwrap();
+        assert!((other.percent - 30.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn aggregate_languages_other_combines_per_repo_drops_and_non_whitelisted_survivors() {
+        // repo A: 85% Python (survives+whitelisted), 15% dropped pre-filter
+        // (never reaches aggregate_languages at all, already excluded by
+        // repo_languages_over_threshold upstream — simulated here by simply
+        // not including it, same as that function's real output shape).
+        // repo B: 60% Rust (survives+whitelisted), 40% JSON (survives
+        // per-repo threshold but isn't whitelisted) — both funnel into one
+        // combined Other, not two separate buckets.
+        let repo_a = (vec![("Python".to_string(), 85.0)], 100.0);
+        let repo_b = (vec![("Rust".to_string(), 60.0), ("JSON".to_string(), 40.0)], 100.0);
+        let slices = aggregate_languages(vec![repo_a, repo_b]);
+        assert_eq!(slices.iter().filter(|s| s.name == "Other").count(), 1);
+        let other = slices.iter().find(|s| s.name == "Other").unwrap();
+        // grand total 200: Python 85 + Rust 60 = 145 whitelisted -> Other = 55
+        assert!((other.percent - 27.5).abs() < 0.01);
     }
 
     #[test]
